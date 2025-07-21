@@ -10,26 +10,26 @@ kotlin {
     jvm {
         jvmToolchain(17)
         withJava()
-        
+
         compilations.all {
             kotlinOptions.jvmTarget = "17"
         }
     }
-    
+
     sourceSets {
         val jvmMain by getting {
             dependencies {
                 // Project modules
                 implementation(projects.shared)
-                
+
                 // Compose Desktop
                 implementation(compose.desktop.currentOs)
-                
+
                 // Coroutines
                 implementation(libs.kotlinx.coroutines.swing)
             }
         }
-        
+
         val jvmTest by getting {
             dependencies {
                 implementation(libs.bundles.testing.common)
@@ -52,19 +52,19 @@ tasks.named<Test>("jvmTest") {
 compose.desktop {
     application {
         mainClass = "com.bigshotsoftware.thenet.desktop.MainKt"
-        
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "TheNet"
             packageVersion = "1.0.0"
-            
+
             description = "TheNet - Decentralized Social Platform"
             copyright = "© 2025 TheNet Project"
             vendor = "TheNet Project"
-            
+
             // License file will be added later
             // licenseFile.set(project.file("../LICENSE"))
-            
+
             windows {
                 menuGroup = "TheNet"
                 // Uncomment when ready for production
@@ -73,20 +73,20 @@ compose.desktop {
                 shortcut = true
                 menu = true
             }
-            
+
             macOS {
                 bundleID = "app.thenet.desktop"
                 iconFile.set(project.file("src/jvmMain/resources/icons/app-icon.icns"))
             }
-            
+
             linux {
                 packageName = "thenet"
                 iconFile.set(project.file("src/jvmMain/resources/icons/app-icon.png"))
             }
-            
+
             includeAllModules = true
         }
-        
+
         buildTypes.release.proguard {
             configurationFiles.from(project.file("proguard-rules.pro"))
         }

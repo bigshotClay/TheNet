@@ -2,13 +2,13 @@ package com.bigshotsoftware.thenet
 
 import io.mockk.every
 import io.mockk.mockk
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import kotlin.test.assertTrue
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @DisplayName("JVM Platform Tests")
 class JvmPlatformTest {
@@ -19,18 +19,19 @@ class JvmPlatformTest {
         val platform = getPlatform()
         assertTrue(
             platform.name.contains("Java", ignoreCase = true),
-            "Platform name should contain Java")
+            "Platform name should contain Java",
+        )
     }
-    
+
     @Test
     @DisplayName("Should work with MockK on JVM")
     fun `should work with MockK on JVM`() {
         val mockPlatform = mockk<Platform>()
         every { mockPlatform.name } returns "Mocked JVM"
-        
+
         assertEquals("Mocked JVM", mockPlatform.name)
     }
-    
+
     @ParameterizedTest
     @ValueSource(strings = ["JVM", "Java", "Desktop"])
     @DisplayName("Should handle different platform name variations")
@@ -40,7 +41,7 @@ class JvmPlatformTest {
         assertNotNull(platform.name)
         assertTrue(platform.name.isNotEmpty(), "Platform name should not be empty")
     }
-    
+
     @Test
     @DisplayName("Should work with basic assertions")
     fun `should work with basic assertions`() {

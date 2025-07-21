@@ -12,13 +12,13 @@ class PlatformTest {
         val platform = getPlatform()
         assertNotNull(platform.name, "Platform name should not be null")
     }
-    
+
     @Test
     fun testMockKIntegration() {
         val mockPlatform = mockk<Platform>()
         assertNotNull(mockPlatform, "MockK should create mock objects")
     }
-    
+
     @Test
     fun testCoroutinesSupport() = runTest {
         // Test that coroutines testing works

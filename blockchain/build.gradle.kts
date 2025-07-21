@@ -2,12 +2,8 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.android.library)
-    alias(libs.plugins.compose)
     alias(libs.plugins.dokka)
 }
-
-// Enable experimental Compose libraries
-@file:OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
 
 kotlin {
     androidTarget {
@@ -32,12 +28,12 @@ kotlin {
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.datetime)
 
-                // Compose Multiplatform
-                implementation(compose.runtime)
-                implementation(compose.foundation)
-                implementation(compose.material3)
-                implementation(compose.ui)
-                implementation(compose.components.resources)
+                // Crypto libraries
+                implementation(libs.bundles.crypto.common)
+
+                // Corda dependencies will be added as they become available
+                // implementation("net.corda:corda-core:${libs.versions.corda.get()}")
+                // implementation("net.corda:corda-rpc:${libs.versions.corda.get()}")
             }
         }
 
@@ -51,11 +47,7 @@ kotlin {
             dependencies {
                 implementation(libs.bundles.android.common)
                 implementation(libs.kotlinx.coroutines.android)
-
-                // Android-specific Compose
-                implementation(libs.androidx.compose.bom)
-                implementation(libs.bundles.compose.android)
-                implementation(compose.preview)
+                implementation(libs.lazysodium.android)
             }
         }
 
@@ -68,8 +60,7 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 implementation(libs.kotlinx.coroutines.swing)
-                implementation(compose.desktop.currentOs)
-                implementation(compose.preview)
+                implementation(libs.lazysodium.java)
             }
         }
 
@@ -78,7 +69,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.bigshotsoftware.thenet.ui"
+    namespace = "com.bigshotsoftware.thenet.blockchain"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
@@ -96,14 +87,6 @@ android {
                 "proguard-rules.pro",
             )
         }
-    }
-
-    buildFeatures {
-        compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.compose.compiler.get()
     }
 
     compileOptions {

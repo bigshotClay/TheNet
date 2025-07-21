@@ -3,8 +3,8 @@
 
 [versions]
 # Kotlin & Gradle
-kotlin = "1.9.22"
-gradle-android = "8.2.2"
+kotlin = "2.1.10"
+gradle-android = "8.8.0-alpha05"
 compose = "1.5.12"
 compose-compiler = "1.5.8"
 
@@ -19,7 +19,7 @@ androidx-activity-compose = "1.8.2"
 androidx-compose-bom = "2024.02.00"
 
 # Kotlin Multiplatform & Coroutines
-kotlinx-coroutines = "1.7.3"
+kotlinx-coroutines = "1.10.1"
 kotlinx-serialization = "1.6.2"
 kotlinx-datetime = "0.5.0"
 
@@ -58,6 +58,7 @@ kotest = "5.8.0"
 detekt = "1.23.4"
 ktlint = "11.6.1"
 dokka = "1.9.10"
+sqldelight = "2.0.1"
 
 [libraries]
 # Kotlin & Coroutines
@@ -134,7 +135,6 @@ compose-android = [
 # Testing dependencies
 testing-common = [
     "kotlin-test",
-    "kotlin-test-junit5",
     "kotlinx-coroutines-test",
     "mockk",
     "kotest-assertions-core",
@@ -187,3 +187,4 @@ compose = { id = "org.jetbrains.compose", version.ref = "compose" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }

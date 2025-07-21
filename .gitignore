@@ -4,6 +4,7 @@ build/
 gradle-app.setting
 !gradle-wrapper.jar
 .gradletasknamecache
+build-cache/
 
 # IDE
 .idea/

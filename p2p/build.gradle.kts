@@ -6,19 +6,13 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain(17)
+
     androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = "17"
-            }
-        }
         publishLibraryVariants("release", "debug")
     }
 
-    jvm("desktop") {
-        jvmToolchain(17)
-        // withJava() removed due to Android plugin compatibility
-    }
+    jvm("desktop")
 
     sourceSets {
         val commonMain by getting {
@@ -31,8 +25,8 @@ kotlin {
                 // Networking
                 implementation(libs.bundles.networking.common)
 
-                // P2P specific libraries will be added as they become available
-                // implementation("nl.tudelft.ipv8:ipv8-kotlin:${libs.versions.ipv8.kotlin.get()}")
+                // P2P IPv8 dependencies
+                implementation(project(":ipv8"))
             }
         }
 
@@ -46,6 +40,8 @@ kotlin {
             dependencies {
                 implementation(libs.bundles.android.common)
                 implementation(libs.kotlinx.coroutines.android)
+                // Android-specific IPv8 implementation
+                implementation(project(":ipv8-android"))
             }
         }
 
@@ -60,6 +56,8 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.swing)
                 // Desktop-specific networking libraries
                 implementation(libs.okhttp)
+                // JVM-specific IPv8 implementation
+                implementation(project(":ipv8-jvm"))
             }
         }
 

@@ -1,6 +1,22 @@
 // Top-level build file for TheNet project
 // Defines common configuration for all subprojects
 
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://plugins.gradle.org/m2/")
+        maven("https://jitpack.io")
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.8.0-alpha05")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.10")
+        classpath("app.cash.sqldelight:gradle-plugin:2.0.1")
+        classpath("org.jetbrains.dokka:dokka-gradle-plugin:1.9.10")
+        classpath("androidx.navigation:navigation-safe-args-gradle-plugin:2.8.6")
+    }
+}
+
 plugins {
     // Apply plugins to subprojects only, using version catalog
     alias(libs.plugins.kotlin.multiplatform) apply false
@@ -12,6 +28,7 @@ plugins {
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.dokka) apply false
+    alias(libs.plugins.sqldelight) apply false
 }
 
 // Common configuration for all projects
@@ -28,10 +45,11 @@ subprojects {
     
     // Configure Kotlin compilation
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-        kotlinOptions {
-            jvmTarget = "17"
-            freeCompilerArgs = freeCompilerArgs + listOf(
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            freeCompilerArgs.addAll(
                 "-opt-in=kotlin.RequiresOptIn",
+                "-opt-in=kotlin.ExperimentalUnsignedTypes",
                 "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
                 "-opt-in=kotlinx.serialization.ExperimentalSerializationApi"
             )

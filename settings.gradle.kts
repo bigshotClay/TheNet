@@ -12,13 +12,14 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
         maven("https://jitpack.io")
         maven("https://repo.eclipse.org/content/repositories/jgit-releases/")
+        maven("https://plugins.gradle.org/m2/")
     }
 }
 
@@ -58,3 +59,11 @@ project(":blockchain").projectDir = file("blockchain")
 project(":identity").projectDir = file("identity")
 project(":content").projectDir = file("content")
 project(":ui").projectDir = file("ui")
+
+// IPv8 library modules (from Git submodule)
+include(":ipv8")
+include(":ipv8-android")
+include(":ipv8-jvm")
+project(":ipv8").projectDir = file("libs/kotlin-ipv8/ipv8")
+project(":ipv8-android").projectDir = file("libs/kotlin-ipv8/ipv8-android")
+project(":ipv8-jvm").projectDir = file("libs/kotlin-ipv8/ipv8-jvm")

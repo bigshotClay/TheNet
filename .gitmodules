@@ -1,0 +1,3 @@
+[submodule "libs/kotlin-ipv8"]
+	path = libs/kotlin-ipv8
+	url = https://github.com/Tribler/kotlin-ipv8.git

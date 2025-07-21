@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(mkdir:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh project create:*)",
+      "Bash(gh api:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh label create:*)",
+      "Bash(# Epic 2.1 tasks (TN-501 to TN-506)\nfor i in {501..506}; do\n  case $i in\n    501) title=\"\"TN-501: Integrate Hyperledger Identus SDK\"\"; desc=\"\"Add Identus KMM dependencies and configure for Android API 21+, iOS and desktop support\"\"; hours=\"\"16-24\"\"; milestone=\"\"M4-Apr: DID Implementation\"\" ;;\n    502) title=\"\"TN-502: Implement DID creation and management\"\"; desc=\"\"Create DID generation logic, build DID document structure and implement DID resolution\"\"; hours=\"\"20-28\"\"; milestone=\"\"M4-Apr: DID Implementation\"\" ;;\n    503) title=\"\"TN-503: Build AnonCreds integration\"\"; desc=\"\"Implement credential schemas, create credential issuance flow and build verification logic\"\"; hours=\"\"24-32\"\"; milestone=\"\"M4-Apr: DID Implementation\"\" ;;\n    504) title=\"\"TN-504: Create identity wallet\"\"; desc=\"\"Design secure storage architecture, implement credential management and build backup/recovery features\"\"; hours=\"\"28-36\"\"; milestone=\"\"M4-Apr: DID Implementation\"\" ;;\n    505) title=\"\"TN-505: Implement key management\"\"; desc=\"\"Integrate platform keystores, create key rotation logic and build key recovery mechanisms\"\"; hours=\"\"24-32\"\"; milestone=\"\"M4-Apr: DID Implementation\"\" ;;\n    506) title=\"\"TN-506: Build authentication framework\"\"; desc=\"\"Implement DID-based authentication, create session management and build multi-device support\"\"; hours=\"\"20-28\"\"; milestone=\"\"M4-Apr: DID Implementation\"\" ;;\n  esac\n  \n  gh issue create --title \"\"$title\"\" --body \"\"**Task ID**: TN-$i\n**Related Epic**: #27\n**Development Phase**: Phase 2 - Identity & Blockchain Integration\n**Priority**: High\n\n**Task Description**: $desc\n\n**Estimated Hours**: $hours\"\" --label \"\"task,phase-2-identity,epic-2.1-did\"\" --milestone \"\"$milestone\"\"\ndone)",
+      "Bash(# Epic 2.2 tasks (TN-601 to TN-606)\nfor i in {601..606}; do\n  case $i in\n    601) title=\"\"TN-601: Integrate zkPass SDK\"\"; desc=\"\"Add zkPass dependencies, configure VOLE-ZK components and set up zk-SNARK generation\"\"; hours=\"\"20-28\"\"; milestone=\"\"M5-May: KYC Verification System\"\" ;;\n    602) title=\"\"TN-602: Create KYC verification flow\"\"; desc=\"\"Design verification UI/UX, implement document capture and build liveness detection\"\"; hours=\"\"24-32\"\"; milestone=\"\"M5-May: KYC Verification System\"\" ;;\n    603) title=\"\"TN-603: Implement zero-knowledge proofs\"\"; desc=\"\"Create proof generation logic, build proof verification and optimize proof performance\"\"; hours=\"\"28-36\"\"; milestone=\"\"M5-May: KYC Verification System\"\" ;;\n    604) title=\"\"TN-604: Connect IDV providers\"\"; desc=\"\"Integrate provider APIs, implement data mapping and create fallback mechanisms\"\"; hours=\"\"20-28\"\"; milestone=\"\"M5-May: KYC Verification System\"\" ;;\n    605) title=\"\"TN-605: Build on-chain verification\"\"; desc=\"\"Create verification contracts, implement status updates and build verification events\"\"; hours=\"\"24-32\"\"; milestone=\"\"M5-May: KYC Verification System\"\" ;;\n    606) title=\"\"TN-606: Implement privacy controls\"\"; desc=\"\"Create data minimization logic, build consent management and implement data retention policies\"\"; hours=\"\"16-24\"\"; milestone=\"\"M5-May: KYC Verification System\"\" ;;\n  esac\n  \n  gh issue create --title \"\"$title\"\" --body \"\"**Task ID**: TN-$i\n**Related Epic**: #28\n**Development Phase**: Phase 2 - Identity & Blockchain Integration\n**Priority**: High\n\n**Task Description**: $desc\n\n**Estimated Hours**: $hours\"\" --label \"\"task,phase-2-identity,epic-2.2-kyc\"\" --milestone \"\"$milestone\"\"\ndone)",
+      "Bash(# Epic 2.3 tasks (TN-701 to TN-706)\nfor i in {701..706}; do\n  case $i in\n    701) title=\"\"TN-701: Complete invitation system\"\"; desc=\"\"Implement 10-invite cap enforcement, create expiration handling and build revocation mechanisms\"\"; hours=\"\"24-32\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n    702) title=\"\"TN-702: Build user status management\"\"; desc=\"\"Define ANONYMOUS/VERIFIED states, create state transition logic and implement permission checks\"\"; hours=\"\"20-28\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n    703) title=\"\"TN-703: Create comprehensive audit trail\"\"; desc=\"\"Design event structure, implement event emission and build event querying\"\"; hours=\"\"20-28\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n    704) title=\"\"TN-704: Implement profile contracts\"\"; desc=\"\"Extend profile state model, add verification badges and create update validation\"\"; hours=\"\"16-24\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n    705) title=\"\"TN-705: Build contract upgrade system\"\"; desc=\"\"Implement upgrade patterns, create migration flows and build compatibility checks\"\"; hours=\"\"28-36\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n    706) title=\"\"TN-706: Optimize gas efficiency\"\"; desc=\"\"Profile contract operations, implement batching and optimize state storage\"\"; hours=\"\"20-28\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n  esac\n  \n  gh issue create --title \"\"$title\"\" --body \"\"**Task ID**: TN-$i\n**Related Epic**: #29\n**Development Phase**: Phase 2 - Identity & Blockchain Integration\n**Priority**: High\n\n**Task Description**: $desc\n\n**Estimated Hours**: $hours\"\" --label \"\"task,phase-2-identity,epic-2.3-contracts\"\" --milestone \"\"$milestone\"\"\ndone)",
+      "Bash(# Epic 2.4 tasks (TN-801 to TN-806)\nfor i in {801..806}; do\n  case $i in\n    801) title=\"\"TN-801: Integrate Bouncy Castle\"\"; desc=\"\"Add BC provider, configure algorithms and set up FIPS mode option\"\"; hours=\"\"16-24\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n    802) title=\"\"TN-802: Implement LazySodium bindings\"\"; desc=\"\"Add JNA dependencies, create Ed25519 operations and build performance tests\"\"; hours=\"\"20-28\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n    803) title=\"\"TN-803: Create content signing system\"\"; desc=\"\"Design signature schemes, implement signing logic and build verification APIs\"\"; hours=\"\"24-32\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n    804) title=\"\"TN-804: Build encryption framework\"\"; desc=\"\"Implement E2E encryption, create group encryption and build key exchange protocols\"\"; hours=\"\"28-36\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n    805) title=\"\"TN-805: Implement secure channels\"\"; desc=\"\"Create TLS integration, build channel encryption and implement perfect forward secrecy\"\"; hours=\"\"24-32\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n    806) title=\"\"TN-806: Create crypto benchmarks\"\"; desc=\"\"Profile operation performance, test across platforms and optimize hot paths\"\"; hours=\"\"16-24\"\"; milestone=\"\"M6-Jun: Phase 2 Completion\"\" ;;\n  esac\n  \n  gh issue create --title \"\"$title\"\" --body \"\"**Task ID**: TN-$i\n**Related Epic**: #30\n**Development Phase**: Phase 2 - Identity & Blockchain Integration\n**Priority**: High\n\n**Task Description**: $desc\n\n**Estimated Hours**: $hours\"\" --label \"\"task,phase-2-identity,epic-2.4-crypto\"\" --milestone \"\"$milestone\"\"\ndone)",
+      "Bash(__NEW_LINE__)",
+      "Bash(echo:*)",
+      "Bash(ls:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh label:*)",
+      "Bash(rm:*)",
+      "Bash(./gradlew:*)",
+      "Bash(wget:*)",
+      "Bash(unzip:*)",
+      "Bash(mv:*)",
+      "Bash(export ANDROID_HOME=$HOME/android-sdk)",
+      "Bash(export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools)",
+      "Bash(ANDROID_HOME=$HOME/android-sdk)",
+      "Bash(export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin)",
+      "Bash(sdkmanager:*)",
+      "Bash(cp:*)",
+      "Bash(find:*)",
+      "Bash(gh run view:*)",
+      "Bash(git reset:*)",
+      "Bash(winget install:*)",
+      "Bash(powershell:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git submodule add:*)"
+    ],
+    "deny": []
+  }
+}

@@ -1,30 +1,51 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    kotlin("multiplatform")
-    id("org.jetbrains.compose")
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.compose)
+    alias(libs.plugins.dokka)
 }
 
 kotlin {
     jvm {
         jvmToolchain(17)
         withJava()
+        
+        compilations.all {
+            kotlinOptions.jvmTarget = "17"
+        }
     }
     
     sourceSets {
         val jvmMain by getting {
             dependencies {
-                implementation(project(":shared"))
+                // Project modules
+                implementation(projects.shared)
+                
+                // Compose Desktop
                 implementation(compose.desktop.currentOs)
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.7.3")
+                
+                // Coroutines
+                implementation(libs.kotlinx.coroutines.swing)
             }
         }
         
         val jvmTest by getting {
             dependencies {
-                implementation(kotlin("test"))
+                implementation(libs.bundles.testing.common)
+                implementation(libs.bundles.testing.jvm)
             }
         }
+    }
+}
+
+// Configure JUnit 5 for JVM tests
+tasks.named<Test>("jvmTest") {
+    useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showStandardStreams = false
     }
 }
 
@@ -38,23 +59,49 @@ compose.desktop {
             packageVersion = "1.0.0"
             
             description = "TheNet - Decentralized Social Platform"
-            copyright = "© 2024 TheNet Project"
+            copyright = "© 2025 TheNet Project"
             vendor = "TheNet Project"
             
-            licenseFile.set(project.file("../LICENSE"))
+            // License file will be added later
+            // licenseFile.set(project.file("../LICENSE"))
             
             windows {
                 menuGroup = "TheNet"
-                // upgradeUuid = "..."
+                // Uncomment when ready for production
+                // upgradeUuid = "12345678-1234-1234-1234-123456789012"
+                iconFile.set(project.file("src/jvmMain/resources/icons/app-icon.ico"))
+                shortcut = true
+                menu = true
             }
             
             macOS {
                 bundleID = "app.thenet.desktop"
+                iconFile.set(project.file("src/jvmMain/resources/icons/app-icon.icns"))
             }
             
             linux {
                 packageName = "thenet"
+                iconFile.set(project.file("src/jvmMain/resources/icons/app-icon.png"))
             }
+            
+            includeAllModules = true
+        }
+        
+        buildTypes.release.proguard {
+            configurationFiles.from(project.file("proguard-rules.pro"))
         }
     }
+}
+
+// Custom tasks
+tasks.register("createAppBundle") {
+    dependsOn("packageDistributionForCurrentOS")
+    description = "Creates application bundle for current OS"
+    group = "distribution"
+}
+
+tasks.register("createAllAppBundles") {
+    dependsOn("packageDmg", "packageMsi", "packageDeb")
+    description = "Creates application bundles for all supported platforms"
+    group = "distribution"
 }

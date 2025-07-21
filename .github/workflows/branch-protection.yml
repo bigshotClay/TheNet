@@ -1,0 +1,144 @@
+name: Branch Protection Setup
+
+on:
+  workflow_dispatch:
+    inputs:
+      enable_protection:
+        description: 'Enable branch protection rules'
+        required: true
+        default: 'true'
+        type: boolean
+
+jobs:
+  setup-branch-protection:
+    name: "🔒 Setup Branch Protection"
+    runs-on: ubuntu-latest
+    if: github.event.inputs.enable_protection == 'true'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Branch Protection for Main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Enable branch protection for main branch
+          gh api --method PUT "/repos/${{ github.repository }}/branches/main/protection" \
+            --field required_status_checks='{"strict":true,"contexts":["🔍 Gradle Validation","🔨 Build & Test (ubuntu-latest)","🔨 Build & Test (windows-latest)","🔨 Build & Test (macos-latest)","📋 Code Quality","🔒 Security Scan"]}' \
+            --field enforce_admins=true \
+            --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true,"require_code_owner_reviews":true,"require_last_push_approval":true}' \
+            --field restrictions=null \
+            --field allow_force_pushes=false \
+            --field allow_deletions=false \
+            --field block_creations=false \
+            --field required_conversation_resolution=true
+            
+      - name: Setup Branch Protection for Develop
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Enable branch protection for develop branch
+          gh api --method PUT "/repos/${{ github.repository }}/branches/develop/protection" \
+            --field required_status_checks='{"strict":true,"contexts":["🔍 Gradle Validation","🔨 Build & Test (ubuntu-latest)","🔨 Build & Test (windows-latest)","🔨 Build & Test (macos-latest)","📋 Code Quality","🔒 Security Scan"]}' \
+            --field enforce_admins=false \
+            --field required_pull_request_reviews='{"required_approving_review_count":1,"dismiss_stale_reviews":true,"require_code_owner_reviews":false,"require_last_push_approval":false}' \
+            --field restrictions=null \
+            --field allow_force_pushes=false \
+            --field allow_deletions=false \
+            --field block_creations=false \
+            --field required_conversation_resolution=true
+        
+      - name: Create Rulesets (Alternative to Branch Protection)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create ruleset for main and develop branches
+          cat > ruleset.json << 'EOF'
+          {
+            "name": "Main Branch Protection",
+            "target": "branch",
+            "enforcement": "active",
+            "conditions": {
+              "ref_name": {
+                "exclude": [],
+                "include": [
+                  "refs/heads/main",
+                  "refs/heads/develop"
+                ]
+              }
+            },
+            "rules": [
+              {
+                "type": "deletion"
+              },
+              {
+                "type": "non_fast_forward"
+              },
+              {
+                "type": "creation"
+              },
+              {
+                "type": "required_status_checks",
+                "parameters": {
+                  "strict_required_status_checks_policy": true,
+                  "required_status_checks": [
+                    {
+                      "context": "🔍 Gradle Validation"
+                    },
+                    {
+                      "context": "🔨 Build & Test (ubuntu-latest)"
+                    },
+                    {
+                      "context": "🔨 Build & Test (windows-latest)"
+                    },
+                    {
+                      "context": "🔨 Build & Test (macos-latest)"
+                    },
+                    {
+                      "context": "📋 Code Quality"
+                    },
+                    {
+                      "context": "🔒 Security Scan"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "pull_request",
+                "parameters": {
+                  "dismiss_stale_reviews_on_push": true,
+                  "require_code_owner_review": true,
+                  "required_approving_review_count": 1,
+                  "required_review_thread_resolution": true,
+                  "require_last_push_approval": true
+                }
+              }
+            ],
+            "bypass_actors": []
+          }
+          EOF
+          
+          # Try to create the ruleset (requires appropriate permissions)
+          gh api --method POST "/repos/${{ github.repository }}/rulesets" --input ruleset.json || echo "Ruleset creation failed - may need repository admin permissions"
+          
+      - name: Summary
+        run: |
+          echo "## 🔒 Branch Protection Configuration Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Protected Branches:" >> $GITHUB_STEP_SUMMARY
+          echo "- **main**: Full protection with required reviews and status checks" >> $GITHUB_STEP_SUMMARY
+          echo "- **develop**: Protection with relaxed review requirements" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Required Status Checks:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔍 Gradle Validation" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔨 Build & Test (All platforms)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📋 Code Quality" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔒 Security Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Protection Rules:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Required pull request reviews" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Dismiss stale reviews on push" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Require conversation resolution" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ No force pushes allowed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ No branch deletions allowed" >> $GITHUB_STEP_SUMMARY

@@ -1,88 +1,123 @@
-name: CI
+name: CI/CD Pipeline
 
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  workflow_dispatch:
 
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
-    name: Validate Gradle Wrapper
+    name: "🔍 Gradle Validation"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: gradle/wrapper-validation-action@v1
-
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    needs: validate
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+      - name: Checkout
+        uses: actions/checkout@v4
         
-      - name: Run tests
-        run: ./gradlew test --stacktrace
-        
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: |
-            **/build/test-results/test/TEST-*.xml
-            **/build/reports/tests/test/
+      - name: Gradle Wrapper Validation
+        uses: gradle/wrapper-validation-action@v2
 
-  build:
-    name: Build
-    runs-on: ${{ matrix.os }}
+  build-and-test:
+    name: "🔨 Build & Test"
     needs: validate
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            platforms: "desktop,android"
+            artifact-name: "linux-artifacts"
+          - os: windows-latest  
+            platforms: "desktop"
+            artifact-name: "windows-artifacts"
+          - os: macos-latest
+            platforms: "desktop,ios"  
+            artifact-name: "macos-artifacts"
+    runs-on: ${{ matrix.os }}
+    
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           
+      - name: Setup Android SDK
+        if: contains(matrix.platforms, 'android')
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+          
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+          
+      - name: Make gradlew executable
+        if: matrix.os != 'windows-latest'
+        run: chmod +x ./gradlew
         
-      - name: Build project
-        run: ./gradlew build --stacktrace
+      - name: Build Project
+        run: ./gradlew build --parallel --configuration-cache
         
-      - name: Upload build artifacts
-        if: matrix.os == 'ubuntu-latest'
+      - name: Run Tests
+        run: ./gradlew testAll --parallel --continue
+        
+      - name: Build Android Debug APK
+        if: contains(matrix.platforms, 'android')
+        run: ./gradlew :android:assembleDebug
+        
+      - name: Build Desktop Distribution
+        if: contains(matrix.platforms, 'desktop')
+        run: ./gradlew :desktop:packageDistributionForCurrentOS
+        
+      - name: Upload Test Reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
+          name: test-reports-${{ matrix.os }}
           path: |
+            **/build/reports/tests/
+            **/build/test-results/
+          retention-days: 30
+          
+      - name: Upload Build Artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: |
+            android/build/outputs/apk/debug/*.apk
+            desktop/build/compose/binaries/main/*/
+            desktop/build/distributions/
             **/build/libs/
-            **/build/outputs/
+          retention-days: 7
 
   code-quality:
-    name: Code Quality
-    runs-on: ubuntu-latest
+    name: "📋 Code Quality"
     needs: validate
+    runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v4
-      
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -90,14 +125,164 @@ jobs:
           distribution: 'temurin'
           
       - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+          
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
         
-      - name: Run detekt
-        run: ./gradlew detekt
+      - name: Run Detekt
+        run: ./gradlew detektAll --continue
         
-      - name: Upload detekt reports
+      - name: Run KtLint
+        run: ./gradlew ktlintCheckAll --continue
+        
+      - name: Upload Detekt Reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: detekt-reports
-          path: '**/build/reports/detekt/'
+          path: |
+            **/build/reports/detekt/
+          retention-days: 30
+          
+      - name: Upload KtLint Reports  
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ktlint-reports
+          path: |
+            **/build/reports/ktlint/
+          retention-days: 30
+
+  security-scan:
+    name: "🔒 Security Scan"
+    needs: validate
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: Upload Trivy scan results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  dependency-check:
+    name: "📦 Dependency Check"
+    needs: validate  
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+        
+      - name: Generate dependency tree
+        run: ./gradlew dependencies > dependencies.txt
+        
+      - name: Upload dependency tree
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-tree
+          path: dependencies.txt
+          retention-days: 30
+
+  publish-reports:
+    name: "📊 Publish Reports"
+    needs: [build-and-test, code-quality]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Download test reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-reports-*
+          merge-multiple: true
+          path: test-reports/
+          
+      - name: Download code quality reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-reports"
+          merge-multiple: true
+          path: quality-reports/
+          
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            test-reports/**/TEST-*.xml
+            test-reports/**/*-test-results.xml
+          comment_mode: create new
+          
+      - name: Comment PR with reports
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            let comment = '## 📊 CI/CD Pipeline Results\n\n';
+            
+            // Check for artifacts
+            const artifacts = [
+              { name: 'Test Reports', pattern: 'test-reports' },
+              { name: 'Code Quality', pattern: 'quality-reports' },
+            ];
+            
+            comment += '### 🎯 Artifacts Generated\n';
+            for (const artifact of artifacts) {
+              const exists = fs.existsSync(artifact.pattern);
+              comment += `- ${artifact.name}: ${exists ? '✅' : '❌'}\n`;
+            }
+            
+            comment += '\n### 🔗 Download Links\n';
+            comment += 'Check the **Artifacts** section in the workflow run for detailed reports.\n';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  notify:
+    name: "📢 Notifications"  
+    needs: [build-and-test, code-quality, security-scan]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Notify on failure
+        if: contains(needs.*.result, 'failure')
+        run: |
+          echo "🚨 Build failed! Check the logs for details."
+          echo "Failed jobs: ${{ toJson(needs) }}"

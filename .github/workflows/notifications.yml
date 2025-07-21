@@ -1,0 +1,145 @@
+name: Build Notifications
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+
+jobs:
+  notify-build-status:
+    name: "📢 Build Status Notification"
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Get Workflow Information
+        id: workflow-info
+        run: |
+          echo "status=${{ github.event.workflow_run.conclusion }}" >> $GITHUB_OUTPUT
+          echo "branch=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+          echo "commit_sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          echo "workflow_url=${{ github.event.workflow_run.html_url }}" >> $GITHUB_OUTPUT
+          echo "commit_message=$(git log --format=%s -n 1 ${{ github.event.workflow_run.head_sha }})" >> $GITHUB_OUTPUT
+          
+      - name: Create Success Issue Comment
+        if: github.event.workflow_run.conclusion == 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Find related PR or issue based on commit message
+          COMMIT_MSG="${{ steps.workflow-info.outputs.commit_message }}"
+          TASK_ID=$(echo "$COMMIT_MSG" | grep -oE "TN-[0-9]+" || echo "")
+          
+          if [ -n "$TASK_ID" ]; then
+            # Try to find the issue
+            ISSUE_NUMBER=$(gh issue list --repo ${{ github.repository }} --search "$TASK_ID in:title" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+            
+            if [ "$ISSUE_NUMBER" != "null" ] && [ ! -z "$ISSUE_NUMBER" ]; then
+              gh issue comment $ISSUE_NUMBER --body "✅ **Build Successful** - ${{ steps.workflow-info.outputs.branch }}
+
+🎯 **Commit**: $(echo "${{ steps.workflow-info.outputs.commit_sha }}" | cut -c1-8)
+📝 **Message**: ${{ steps.workflow-info.outputs.commit_message }}
+🔗 **Workflow**: [${{ github.event.workflow_run.conclusion }}](${{ steps.workflow-info.outputs.workflow_url }})
+
+**✅ All Checks Passed:**
+- Build & Test (All Platforms)
+- Code Quality (detekt, ktlint)
+- Security Scan
+- Dependency Check
+
+Ready for review! 🚀"
+            fi
+          fi
+          
+      - name: Create Failure Issue Comment  
+        if: github.event.workflow_run.conclusion == 'failure'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Find related PR or issue based on commit message
+          COMMIT_MSG="${{ steps.workflow-info.outputs.commit_message }}"
+          TASK_ID=$(echo "$COMMIT_MSG" | grep -oE "TN-[0-9]+" || echo "")
+          
+          if [ -n "$TASK_ID" ]; then
+            # Try to find the issue
+            ISSUE_NUMBER=$(gh issue list --repo ${{ github.repository }} --search "$TASK_ID in:title" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+            
+            if [ "$ISSUE_NUMBER" != "null" ] && [ ! -z "$ISSUE_NUMBER" ]; then
+              gh issue comment $ISSUE_NUMBER --body "❌ **Build Failed** - ${{ steps.workflow-info.outputs.branch }}
+
+🎯 **Commit**: $(echo "${{ steps.workflow-info.outputs.commit_sha }}" | cut -c1-8)
+📝 **Message**: ${{ steps.workflow-info.outputs.commit_message }}
+🔗 **Workflow**: [View Failed Run](${{ steps.workflow-info.outputs.workflow_url }})
+
+**🚨 Action Required:**
+1. Check the workflow logs for detailed error messages
+2. Fix any failing tests, code quality issues, or build errors
+3. Push the fixes to continue development
+
+**Common Issues:**
+- Test failures: Check unit/integration test logs
+- Code quality: Review detekt/ktlint reports
+- Build errors: Verify all dependencies and configuration
+- Security issues: Review Trivy security scan results"
+
+              # Add failure label
+              gh issue edit $ISSUE_NUMBER --add-label "build-failure"
+            fi
+          fi
+          
+      - name: Send Email Notification (if configured)
+        if: github.event.workflow_run.conclusion == 'failure'
+        run: |
+          # This would require additional setup with email service
+          echo "🚨 Build failure detected on ${{ steps.workflow-info.outputs.branch }}"
+          echo "Commit: ${{ steps.workflow-info.outputs.commit_sha }}"
+          echo "Message: ${{ steps.workflow-info.outputs.commit_message }}"
+          echo "Workflow: ${{ steps.workflow-info.outputs.workflow_url }}"
+          
+          # Log for admin notification
+          echo "BUILD_FAILURE_NOTIFICATION" >> $GITHUB_STEP_SUMMARY
+          echo "Branch: ${{ steps.workflow-info.outputs.branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "Status: ${{ steps.workflow-info.outputs.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "Workflow URL: ${{ steps.workflow-info.outputs.workflow_url }}" >> $GITHUB_STEP_SUMMARY
+
+  create-build-summary:
+    name: "📊 Build Summary"
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Generate Build Summary
+        run: |
+          echo "# 🏗️ Build Summary - $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Workflow Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ github.event.workflow_run.conclusion }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.event.workflow_run.head_branch }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.event.workflow_run.head_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Workflow**: [${{ github.event.workflow_run.name }}](${{ github.event.workflow_run.html_url }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
+            echo "## ✅ Success!" >> $GITHUB_STEP_SUMMARY
+            echo "All checks passed successfully. The build is ready for deployment or review." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Build Failed" >> $GITHUB_STEP_SUMMARY
+            echo "The build encountered issues. Check the workflow logs and fix any problems before continuing." >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Next Steps" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ github.event.workflow_run.conclusion }}" = "success" ]; then
+            echo "- Review code changes if this is a PR" >> $GITHUB_STEP_SUMMARY
+            echo "- Consider deploying to staging environment" >> $GITHUB_STEP_SUMMARY
+            echo "- Update task status if this completes development work" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- Review workflow logs for specific error details" >> $GITHUB_STEP_SUMMARY
+            echo "- Fix any failing tests or code quality issues" >> $GITHUB_STEP_SUMMARY
+            echo "- Re-run the workflow after fixes are pushed" >> $GITHUB_STEP_SUMMARY
+          fi

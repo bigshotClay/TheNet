@@ -1,0 +1,61 @@
+name: Milestone Tracking
+
+on:
+  schedule:
+    - cron: '0 9 * * MON'  # Every Monday at 9 AM UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  milestone-report:
+    name: Generate Milestone Report
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Weekly Report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "# 📊 Weekly Development Report - $(date +'%Y-%m-%d')" > report.md
+          echo "" >> report.md
+          
+          # Get current milestone progress
+          echo "## 🎯 Current Milestone Progress" >> report.md
+          echo "" >> report.md
+          
+          # Get open issues by phase
+          PHASE1_OPEN=$(gh issue list --repo ${{ github.repository }} --label "phase-1-p2p" --state open --json number | jq '. | length')
+          PHASE1_CLOSED=$(gh issue list --repo ${{ github.repository }} --label "phase-1-p2p" --state closed --json number | jq '. | length')
+          
+          echo "### Phase 1 - Core P2P Infrastructure" >> report.md
+          echo "- Open Tasks: $PHASE1_OPEN" >> report.md
+          echo "- Completed Tasks: $PHASE1_CLOSED" >> report.md
+          echo "- Progress: $(( $PHASE1_CLOSED * 100 / ($PHASE1_OPEN + $PHASE1_CLOSED) ))%" >> report.md
+          echo "" >> report.md
+          
+          # Get recently completed tasks
+          echo "## ✅ Recently Completed (Last 7 Days)" >> report.md
+          echo "" >> report.md
+          gh issue list --repo ${{ github.repository }} --state closed --label "task" --search "closed:>$(date -d '7 days ago' +'%Y-%m-%d')" --json title,number,closedAt | jq -r '.[] | "- [#\(.number)](\(.html_url)) \(.title) (Closed: \(.closedAt | split("T")[0]))"' >> report.md
+          echo "" >> report.md
+          
+          # Get blocked issues
+          echo "## 🚫 Blocked Issues" >> report.md
+          echo "" >> report.md
+          gh issue list --repo ${{ github.repository }} --label "blocked" --json title,number,html_url | jq -r '.[] | "- [#\(.number)](\(.html_url)) \(.title)"' >> report.md
+          echo "" >> report.md
+          
+          # Get overdue issues (optional - requires milestone dates)
+          echo "## ⏰ In Progress Tasks" >> report.md
+          echo "" >> report.md
+          gh issue list --repo ${{ github.repository }} --label "in-progress" --json title,number,html_url,assignees | jq -r '.[] | "- [#\(.number)](\(.html_url)) \(.title) (Assignee: \(.assignees[0].login // "Unassigned"))"' >> report.md
+          
+          cat report.md
+          
+      - name: Create Issue with Report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --repo ${{ github.repository }} \
+            --title "📊 Weekly Development Report - $(date +'%Y-%m-%d')" \
+            --body-file report.md \
+            --label "report,documentation"

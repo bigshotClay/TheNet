@@ -1,0 +1,81 @@
+name: Development Task
+description: Create a new development task
+title: "TN-XXXX: "
+labels: ["task", "needs-triage"]
+body:
+  - type: input
+    id: task-id
+    attributes:
+      label: Task ID
+      description: Task identifier (TN-XXXX format)
+      placeholder: "TN-101"
+    validations:
+      required: true
+  - type: input
+    id: epic-link
+    attributes:
+      label: Related Epic
+      description: Link to the parent epic issue
+      placeholder: "#123"
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Development Phase
+      options:
+        - Phase 1 - Core P2P Infrastructure
+        - Phase 2 - Identity & Blockchain
+        - Phase 3 - Content & Distribution
+        - Phase 4 - UI & Polish
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+      default: 1
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description
+      description: Detailed description of what needs to be implemented
+      placeholder: "Implement IPv8 networking layer with NAT traversal support..."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: What needs to be completed for this task to be considered done?
+      placeholder: |
+        - [ ] Implement feature X
+        - [ ] Add unit tests with >80% coverage
+        - [ ] Update documentation
+        - [ ] Code review completed
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: Any technical implementation details, dependencies, or considerations
+      placeholder: |
+        - Dependencies: IPv8 library, Kotlin coroutines
+        - Integration points: P2P discovery service
+        - Testing considerations: NAT traversal scenarios
+  - type: input
+    id: estimate
+    attributes:
+      label: Estimated Hours
+      description: How many hours do you estimate this task will take?
+      placeholder: "8-16 hours"

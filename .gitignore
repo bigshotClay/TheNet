@@ -1,0 +1,98 @@
+# Kotlin Multiplatform
+build/
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# IDE
+.idea/
+*.iml
+*.iws
+.vscode/
+.fleet/
+
+# Android
+.androidTest/
+local.properties
+*.hprof
+lint-report.html
+
+# iOS
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+*.xcworkspace/*
+!*.xcworkspace/contents.xcworkspacedata
+!*.xcworkspace/xcshareddata/
+*.playground
+xcuserdata/
+*.ipa
+*.dSYM.zip
+*.dSYM
+.DS_Store
+
+# Corda
+logs/
+cache/
+**/build/nodes/
+**/build/libs/
+cordapps/
+**/build/classes/
+drivers/
+
+# P2P/Networking
+bootstrap-nodes.json
+peer-cache/
+network-logs/
+
+# Cryptographic Materials (DO NOT COMMIT)
+*.p12
+*.jks
+*.keystore
+private-keys/
+certificates/
+*.pem
+*.crt
+*.key
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+log/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Documentation
+docs/generated/
+
+# Test outputs
+test-results/
+test-reports/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Environment specific
+.env
+.env.local
+.env.production
+config/local/
+
+# Generated documentation files (keep local, don't commit)
+CLAUDE.md
+DEVELOPMENT_PLAN.md
+TheNet_Research.md
+design.txt
+summary.txt

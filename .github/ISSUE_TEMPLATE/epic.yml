@@ -1,0 +1,63 @@
+name: Epic
+description: Create a new epic for major feature development
+title: "[EPIC] "
+labels: ["epic", "needs-triage"]
+body:
+  - type: input
+    id: epic-id
+    attributes:
+      label: Epic ID
+      description: Epic identifier (e.g., Epic 1.1, Epic 2.3)
+      placeholder: "Epic X.Y"
+    validations:
+      required: true
+  - type: input
+    id: epic-goal
+    attributes:
+      label: Epic Goal
+      description: What is the main objective of this epic?
+      placeholder: "Build comprehensive content creation and storage infrastructure"
+    validations:
+      required: true
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Development Phase
+      options:
+        - Phase 1 - Core P2P Infrastructure
+        - Phase 2 - Identity & Blockchain
+        - Phase 3 - Content & Distribution
+        - Phase 4 - UI & Polish
+    validations:
+      required: true
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Associated Tasks
+      description: List all tasks that belong to this epic
+      placeholder: |
+        - [ ] TN-XXX: Task description
+        - [ ] TN-YYY: Task description
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Epic Acceptance Criteria
+      description: What needs to be completed for this epic to be considered done?
+      placeholder: |
+        - [ ] All associated tasks completed
+        - [ ] Integration tests passing
+        - [ ] Documentation updated
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: input
+    id: estimate
+    attributes:
+      label: Estimated Duration
+      description: How long do you estimate this epic will take? (in weeks)
+      placeholder: "2-4 weeks"

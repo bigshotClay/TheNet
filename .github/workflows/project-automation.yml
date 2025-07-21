@@ -1,0 +1,98 @@
+name: Project Automation
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened, labeled]
+  pull_request:
+    types: [opened, closed, merged, ready_for_review, converted_to_draft]
+
+jobs:
+  add-to-project:
+    name: Add to Project
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    steps:
+      - name: Add Issue to Phase 1 Project
+        if: contains(github.event.issue.labels.*.name, 'phase-1') || contains(github.event.issue.title, 'TN-1') || contains(github.event.issue.title, 'TN-2') || contains(github.event.issue.title, 'TN-3') || contains(github.event.issue.title, 'TN-4')
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/users/bigshotClay/projects/1
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add Issue to Phase 2 Project  
+        if: contains(github.event.issue.labels.*.name, 'phase-2') || contains(github.event.issue.title, 'TN-5') || contains(github.event.issue.title, 'TN-6') || contains(github.event.issue.title, 'TN-7') || contains(github.event.issue.title, 'TN-8')
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/users/bigshotClay/projects/2
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add Issue to Phase 3 Project
+        if: contains(github.event.issue.labels.*.name, 'phase-3') || contains(github.event.issue.title, 'TN-9') || contains(github.event.issue.title, 'TN-10') || contains(github.event.issue.title, 'TN-11') || contains(github.event.issue.title, 'TN-12') || contains(github.event.issue.title, 'TN-13')
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/users/bigshotClay/projects/3
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add Issue to Phase 4 Project
+        if: contains(github.event.issue.labels.*.name, 'phase-4') || contains(github.event.issue.title, 'TN-14') || contains(github.event.issue.title, 'TN-15') || contains(github.event.issue.title, 'TN-16') || contains(github.event.issue.title, 'TN-17') || contains(github.event.issue.title, 'TN-18') || contains(github.event.issue.title, 'TN-19')
+        uses: actions/add-to-project@v0.5.0
+        with:
+          project-url: https://github.com/users/bigshotClay/projects/4
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  update-status:
+    name: Update Task Status
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Extract Task ID from PR Title
+        id: task-id
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          TASK_ID=$(echo "$PR_TITLE" | grep -oE "TN-[0-9]+")
+          echo "task_id=$TASK_ID" >> $GITHUB_OUTPUT
+          
+      - name: Close Related Task Issue
+        if: steps.task-id.outputs.task_id
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Find and close the related issue
+          ISSUE_NUMBER=$(gh issue list --repo ${{ github.repository }} --search "${{ steps.task-id.outputs.task_id }} in:title" --state open --json number --jq '.[0].number')
+          if [ "$ISSUE_NUMBER" != "null" ] && [ ! -z "$ISSUE_NUMBER" ]; then
+            gh issue close $ISSUE_NUMBER --repo ${{ github.repository }} --comment "✅ Completed via PR #${{ github.event.number }}"
+          fi
+
+  label-automation:
+    name: Automatic Labeling
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    steps:
+      - name: Apply Phase Labels
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISSUE_NUMBER=${{ github.event.issue.number }}
+          TITLE="${{ github.event.issue.title }}"
+          
+          # Apply phase labels based on task ID
+          if echo "$TITLE" | grep -qE "TN-[1-4][0-9][0-9]"; then
+            gh issue edit $ISSUE_NUMBER --add-label "phase-1-p2p"
+          elif echo "$TITLE" | grep -qE "TN-[5-8][0-9][0-9]"; then
+            gh issue edit $ISSUE_NUMBER --add-label "phase-2-identity"  
+          elif echo "$TITLE" | grep -qE "TN-(9|10|11|12|13)[0-9][0-9]"; then
+            gh issue edit $ISSUE_NUMBER --add-label "phase-3-content"
+          elif echo "$TITLE" | grep -qE "TN-(14|15|16|17|18|19)[0-9][0-9]"; then
+            gh issue edit $ISSUE_NUMBER --add-label "phase-4-ui"
+          fi
+          
+          # Apply epic labels based on task ID ranges
+          if echo "$TITLE" | grep -qE "TN-1[0-9][0-9]"; then
+            gh issue edit $ISSUE_NUMBER --add-label "epic-1.1-dev-env"
+          elif echo "$TITLE" | grep -qE "TN-2[0-9][0-9]"; then
+            gh issue edit $ISSUE_NUMBER --add-label "epic-1.2-ipv8"
+          elif echo "$TITLE" | grep -qE "TN-3[0-9][0-9]"; then
+            gh issue edit $ISSUE_NUMBER --add-label "epic-1.3-corda"
+          elif echo "$TITLE" | grep -qE "TN-4[0-9][0-9]"; then
+            gh issue edit $ISSUE_NUMBER --add-label "epic-1.4-anti-bot"
+          fi

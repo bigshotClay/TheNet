@@ -14,7 +14,7 @@ import kotlin.math.min
 
 /**
  * Advanced peer information caching system with persistence, TTL, and intelligent eviction.
- * 
+ *
  * Features:
  * - Multi-tier caching (memory, disk, network)
  * - LRU and LFU eviction policies
@@ -24,7 +24,7 @@ import kotlin.math.min
  * - Cross-session persistence
  */
 class PeerCache(
-    private val config: PeerCacheConfig = PeerCacheConfig()
+    private val config: PeerCacheConfig = PeerCacheConfig(),
 ) {
 
     /**
@@ -42,19 +42,19 @@ class PeerCache(
         val evictionPolicy: EvictionPolicy = EvictionPolicy.LRU_WITH_REPUTATION,
         val reputationDecayRate: Double = 0.1,
         val connectionHistorySize: Int = 10,
-        val autoWarmingEnabled: Boolean = true
+        val autoWarmingEnabled: Boolean = true,
     )
 
     /**
      * Cache eviction policies
      */
     enum class EvictionPolicy {
-        LRU,           // Least Recently Used
-        LFU,           // Least Frequently Used
-        TTL_BASED,     // Time To Live based
-        REPUTATION,    // Reputation based
+        LRU, // Least Recently Used
+        LFU, // Least Frequently Used
+        TTL_BASED, // Time To Live based
+        REPUTATION, // Reputation based
         LRU_WITH_REPUTATION, // Hybrid LRU + reputation
-        NETWORK_DISTANCE     // Network distance based
+        NETWORK_DISTANCE, // Network distance based
     }
 
     /**
@@ -64,7 +64,7 @@ class PeerCache(
         LOW,
         NORMAL,
         HIGH,
-        CRITICAL
+        CRITICAL,
     }
 
     /**
@@ -76,12 +76,12 @@ class PeerCache(
         val address: String,
         val port: Int,
         val isConnected: Boolean,
-        val lastSeen: Long
+        val lastSeen: Long,
     ) {
         fun toIPv8PeerInfo(): IPv8Manager.PeerInfo {
             return IPv8Manager.PeerInfo(peerId, address, port, isConnected, lastSeen)
         }
-        
+
         companion object {
             fun fromIPv8PeerInfo(peer: IPv8Manager.PeerInfo): SerializablePeerInfo {
                 return SerializablePeerInfo(peer.peerId, peer.address, peer.port, peer.isConnected, peer.lastSeen)
@@ -105,7 +105,7 @@ class PeerCache(
         val connectionHistory: List<ConnectionAttempt> = emptyList(),
         val networkDistance: Int = Int.MAX_VALUE, // DHT distance
         val tags: Set<String> = emptySet(),
-        val metadata: Map<String, String> = emptyMap()
+        val metadata: Map<String, String> = emptyMap(),
     ) {
         /**
          * Check if peer is expired
@@ -121,22 +121,22 @@ class PeerCache(
             val currentTime = System.currentTimeMillis()
             val age = (currentTime - cachedAt).toDouble()
             val recency = (currentTime - lastAccessed).toDouble()
-            
+
             // Normalize values
             val normalizedAge = min(age / ttl, 1.0)
             val normalizedRecency = min(recency / 86400000.0, 1.0) // 24h max
             val normalizedFrequency = min(accessCount.toDouble() / 100.0, 1.0)
-            
+
             // Calculate composite score
             val reputationWeight = 0.3
             val frequencyWeight = 0.25
             val recencyWeight = 0.25
             val ageWeight = 0.2
-            
+
             return (reputation * reputationWeight) +
-                   (normalizedFrequency * frequencyWeight) +
-                   ((1.0 - normalizedRecency) * recencyWeight) +
-                   ((1.0 - normalizedAge) * ageWeight)
+                (normalizedFrequency * frequencyWeight) +
+                ((1.0 - normalizedRecency) * recencyWeight) +
+                ((1.0 - normalizedAge) * ageWeight)
         }
     }
 
@@ -149,7 +149,7 @@ class PeerCache(
         val success: Boolean,
         val latency: Long = 0,
         val errorMessage: String? = null,
-        val connectionMethod: String = "unknown"
+        val connectionMethod: String = "unknown",
     )
 
     /**
@@ -163,33 +163,33 @@ class PeerCache(
         val evictionCount: Long = 0,
         val persistenceOperations: Long = 0,
         val averageRetrievalTime: Long = 0,
-        val reputationDistribution: Map<PeerPriority, Int> = emptyMap()
+        val reputationDistribution: Map<PeerPriority, Int> = emptyMap(),
     )
 
     // Cache storage
     private val memoryCache = mutableMapOf<String, CachedPeerInfo>()
     private val diskCache = mutableMapOf<String, CachedPeerInfo>() // Simulated disk cache
     private val mutex = Mutex()
-    
+
     // Cache metrics
     private var hitCount = 0L
     private var missCount = 0L
     private var evictionCount = 0L
     private var persistenceOperations = 0L
     private val retrievalTimes = mutableListOf<Long>()
-    
+
     // State flows
     private val _cacheStatistics = MutableStateFlow(CacheStatistics())
     val cacheStatistics: StateFlow<CacheStatistics> = _cacheStatistics.asStateFlow()
-    
+
     private val _cachedPeers = MutableStateFlow<List<CachedPeerInfo>>(emptyList())
     val cachedPeers: StateFlow<List<CachedPeerInfo>> = _cachedPeers.asStateFlow()
-    
+
     // Background tasks
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var cleanupJob: Job? = null
     private var reputationDecayJob: Job? = null
-    
+
     init {
         startBackgroundTasks()
     }
@@ -202,13 +202,13 @@ class PeerCache(
         priority: PeerPriority = PeerPriority.NORMAL,
         ttl: Long? = null,
         tags: Set<String> = emptySet(),
-        metadata: Map<String, String> = emptyMap()
+        metadata: Map<String, String> = emptyMap(),
     ) = mutex.withLock {
         val effectiveTTL = ttl ?: when (priority) {
             PeerPriority.CRITICAL, PeerPriority.HIGH -> config.highPriorityTTL
             else -> config.defaultTTL
         }
-        
+
         val existing = memoryCache[peer.peerId]
         val serializablePeer = SerializablePeerInfo.fromIPv8PeerInfo(peer)
         val cachedPeer = CachedPeerInfo(
@@ -223,20 +223,20 @@ class PeerCache(
             connectionHistory = existing?.connectionHistory ?: emptyList(),
             networkDistance = existing?.networkDistance ?: Int.MAX_VALUE,
             tags = tags,
-            metadata = metadata
+            metadata = metadata,
         )
-        
+
         // Store in memory cache
         memoryCache[peer.peerId] = cachedPeer
-        
+
         // Evict if necessary
         evictIfNecessary()
-        
+
         // Persist to disk if enabled
         if (config.persistenceEnabled) {
             persistToDisk(cachedPeer)
         }
-        
+
         updateStatistics()
         updateCachedPeersList()
     }
@@ -246,14 +246,14 @@ class PeerCache(
      */
     suspend fun get(peerId: String): CachedPeerInfo? {
         val startTime = System.currentTimeMillis()
-        
+
         return mutex.withLock {
             // Check memory cache first
             var cachedPeer = memoryCache[peerId]
-            
+
             if (cachedPeer != null) {
                 hitCount++
-                
+
                 // Check if expired
                 if (cachedPeer.isExpired()) {
                     memoryCache.remove(peerId)
@@ -264,7 +264,7 @@ class PeerCache(
                     // Update access information
                     val updatedPeer = cachedPeer.copy(
                         lastAccessed = System.currentTimeMillis(),
-                        accessCount = cachedPeer.accessCount + 1
+                        accessCount = cachedPeer.accessCount + 1,
                     )
                     memoryCache[peerId] = updatedPeer
                     updatedPeer
@@ -272,20 +272,20 @@ class PeerCache(
             } else {
                 // Check disk cache
                 cachedPeer = diskCache[peerId]
-                
+
                 if (cachedPeer != null && !cachedPeer.isExpired()) {
                     hitCount++
-                    
+
                     // Promote to memory cache
                     val updatedPeer = cachedPeer.copy(
                         lastAccessed = System.currentTimeMillis(),
-                        accessCount = cachedPeer.accessCount + 1
+                        accessCount = cachedPeer.accessCount + 1,
                     )
                     memoryCache[peerId] = updatedPeer
-                    
+
                     // Evict if necessary
                     evictIfNecessary()
-                    
+
                     updatedPeer
                 } else {
                     missCount++
@@ -312,12 +312,12 @@ class PeerCache(
             val newReputation = max(0.0, min(1.0, cached.reputation + reputationDelta))
             val updated = cached.copy(reputation = newReputation)
             memoryCache[peerId] = updated
-            
+
             if (config.persistenceEnabled) {
                 persistToDisk(updated)
             }
         }
-        
+
         updateCachedPeersList()
     }
 
@@ -329,7 +329,7 @@ class PeerCache(
         success: Boolean,
         latency: Long = 0,
         errorMessage: String? = null,
-        connectionMethod: String = "unknown"
+        connectionMethod: String = "unknown",
     ) = mutex.withLock {
         memoryCache[peerId]?.let { cached ->
             val attempt = ConnectionAttempt(
@@ -337,28 +337,28 @@ class PeerCache(
                 success = success,
                 latency = latency,
                 errorMessage = errorMessage,
-                connectionMethod = connectionMethod
+                connectionMethod = connectionMethod,
             )
-            
+
             val updatedHistory = (cached.connectionHistory + attempt)
                 .takeLast(config.connectionHistorySize)
-            
+
             val reputationChange = if (success) 0.1 else -0.1
             val newReputation = max(0.0, min(1.0, cached.reputation + reputationChange))
-            
+
             val updated = cached.copy(
                 connectionHistory = updatedHistory,
                 reputation = newReputation,
-                lastAccessed = System.currentTimeMillis()
+                lastAccessed = System.currentTimeMillis(),
             )
-            
+
             memoryCache[peerId] = updated
-            
+
             if (config.persistenceEnabled) {
                 persistToDisk(updated)
             }
         }
-        
+
         updateCachedPeersList()
     }
 
@@ -369,12 +369,12 @@ class PeerCache(
         memoryCache[peerId]?.let { cached ->
             val updated = cached.copy(networkDistance = distance)
             memoryCache[peerId] = updated
-            
+
             if (config.persistenceEnabled) {
                 persistToDisk(updated)
             }
         }
-        
+
         updateCachedPeersList()
     }
 
@@ -436,7 +436,7 @@ class PeerCache(
      */
     suspend fun warmCache(peers: List<IPv8Manager.PeerInfo>) {
         if (!config.autoWarmingEnabled) return
-        
+
         for (peer in peers) {
             put(peer, PeerPriority.HIGH)
         }
@@ -449,12 +449,12 @@ class PeerCache(
         val exportData = mapOf(
             "memory" to memoryCache.values.toList(),
             "disk" to diskCache.values.toList(),
-            "timestamp" to System.currentTimeMillis()
+            "timestamp" to System.currentTimeMillis(),
         )
-        
+
         Json.encodeToString(
             kotlinx.serialization.serializer<Map<String, Any>>(),
-            exportData as Map<String, Any>
+            exportData as Map<String, Any>,
         )
     }
 
@@ -474,7 +474,7 @@ class PeerCache(
 
     private suspend fun evictIfNecessary() {
         if (memoryCache.size <= config.maxMemoryCacheSize) return
-        
+
         val peersToEvict = when (config.evictionPolicy) {
             EvictionPolicy.LRU -> {
                 memoryCache.values.sortedBy { it.lastAccessed }
@@ -495,20 +495,20 @@ class PeerCache(
                 memoryCache.values.sortedByDescending { it.networkDistance }
             }
         }
-        
+
         val evictCount = memoryCache.size - config.maxMemoryCacheSize + 1
         val toEvict = peersToEvict.take(evictCount)
-        
+
         for (peer in toEvict) {
             // Don't evict critical priority peers
             if (peer.priority != PeerPriority.CRITICAL) {
                 memoryCache.remove(peer.peer.peerId)
-                
+
                 // Move to disk cache if there's space
                 if (diskCache.size < config.maxDiskCacheSize) {
                     diskCache[peer.peer.peerId] = peer
                 }
-                
+
                 evictionCount++
             }
         }
@@ -528,7 +528,7 @@ class PeerCache(
                 cleanupExpiredPeers()
             }
         }
-        
+
         // Reputation decay
         reputationDecayJob = scope.launch {
             while (isActive) {
@@ -541,18 +541,18 @@ class PeerCache(
     private suspend fun cleanupExpiredPeers() = mutex.withLock {
         val currentTime = System.currentTimeMillis()
         val expiredPeers = mutableListOf<String>()
-        
+
         for ((peerId, cached) in memoryCache) {
             if (cached.isExpired()) {
                 expiredPeers.add(peerId)
             }
         }
-        
+
         for (peerId in expiredPeers) {
             memoryCache.remove(peerId)
             diskCache.remove(peerId)
         }
-        
+
         if (expiredPeers.isNotEmpty()) {
             updateStatistics()
             updateCachedPeersList()
@@ -565,7 +565,7 @@ class PeerCache(
             val updated = cached.copy(reputation = max(0.0, decayedReputation))
             memoryCache[peerId] = updated
         }
-        
+
         updateCachedPeersList()
     }
 
@@ -573,7 +573,7 @@ class PeerCache(
         val totalRequests = hitCount + missCount
         val hitRate = if (totalRequests > 0) hitCount.toFloat() / totalRequests else 0f
         val missRate = if (totalRequests > 0) missCount.toFloat() / totalRequests else 0f
-        
+
         val avgRetrievalTime = synchronized(retrievalTimes) {
             if (retrievalTimes.isNotEmpty()) {
                 retrievalTimes.average().toLong()
@@ -581,9 +581,9 @@ class PeerCache(
                 0L
             }
         }
-        
+
         val reputationDist = memoryCache.values.groupingBy { it.priority }.eachCount()
-        
+
         _cacheStatistics.value = CacheStatistics(
             memorySize = memoryCache.size,
             diskSize = diskCache.size,
@@ -592,7 +592,7 @@ class PeerCache(
             evictionCount = evictionCount,
             persistenceOperations = persistenceOperations,
             averageRetrievalTime = avgRetrievalTime,
-            reputationDistribution = reputationDist
+            reputationDistribution = reputationDist,
         )
     }
 

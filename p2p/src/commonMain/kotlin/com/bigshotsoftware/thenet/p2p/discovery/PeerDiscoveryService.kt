@@ -5,11 +5,10 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 
 /**
  * Peer discovery service that integrates Kademlia DHT with IPv8 for enhanced peer discovery.
- * 
+ *
  * This service provides:
  * - DHT-based peer discovery with Kademlia protocol
  * - Integration with IPv8's existing discovery mechanisms
@@ -19,7 +18,7 @@ import kotlinx.coroutines.flow.combine
  */
 class PeerDiscoveryService(
     private val dht: KademliaDHT,
-    private val config: DiscoveryConfig = DiscoveryConfig()
+    private val config: DiscoveryConfig = DiscoveryConfig(),
 ) {
 
     /**
@@ -33,7 +32,7 @@ class PeerDiscoveryService(
         val bootstrapRetryInterval: Long = 60000, // 1 minute
         val maxBootstrapRetries: Int = 5,
         val enablePeriodicDiscovery: Boolean = true,
-        val enableBootstrapRetry: Boolean = true
+        val enableBootstrapRetry: Boolean = true,
     )
 
     /**
@@ -57,26 +56,26 @@ class PeerDiscoveryService(
         val discoveredAt: Long,
         val lastSeen: Long,
         val connectionAttempts: Int = 0,
-        val isBootstrap: Boolean = false
+        val isBootstrap: Boolean = false,
     )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val peerCache = mutableMapOf<String, CachedPeer>()
     private val discoveryCallbacks = mutableListOf<(DiscoveryEvent) -> Unit>()
-    
+
     // Discovery state
     private var isRunning = false
     private var discoveryJob: Job? = null
     private var bootstrapRetryJob: Job? = null
     private var cleanupJob: Job? = null
-    
+
     // State flows for observing discovery state
     private val _discoveredPeers = MutableStateFlow<List<IPv8Manager.PeerInfo>>(emptyList())
     val discoveredPeers: StateFlow<List<IPv8Manager.PeerInfo>> = _discoveredPeers.asStateFlow()
-    
+
     private val _connectedPeers = MutableStateFlow<List<IPv8Manager.PeerInfo>>(emptyList())
     val connectedPeers: StateFlow<List<IPv8Manager.PeerInfo>> = _connectedPeers.asStateFlow()
-    
+
     private val _discoveryStatistics = MutableStateFlow(DiscoveryStatistics())
     val discoveryStatistics: StateFlow<DiscoveryStatistics> = _discoveryStatistics.asStateFlow()
 
@@ -89,7 +88,7 @@ class PeerDiscoveryService(
         val cachedPeers: Int = 0,
         val connectionSuccessRate: Float = 0f,
         val averageDiscoveryTime: Long = 0,
-        val lastDiscoveryTime: Long = 0
+        val lastDiscoveryTime: Long = 0,
     )
 
     init {
@@ -106,18 +105,18 @@ class PeerDiscoveryService(
      */
     suspend fun start(bootstrapPeers: List<IPv8Manager.PeerInfo> = emptyList()) {
         if (isRunning) return
-        
+
         isRunning = true
-        
+
         try {
             // Start DHT
             dht.start(dht.config)
-            
+
             // Add bootstrap peers to cache and DHT
             for (peer in bootstrapPeers) {
                 addBootstrapPeer(peer)
             }
-            
+
             // Bootstrap DHT with initial peers
             if (bootstrapPeers.isNotEmpty()) {
                 val dhtNodes = bootstrapPeers.map { peer ->
@@ -125,32 +124,31 @@ class PeerDiscoveryService(
                         nodeId = peer.peerId.toByteArray(), // Convert peerId to byte array
                         address = peer.address,
                         port = peer.port,
-                        lastSeen = peer.lastSeen
+                        lastSeen = peer.lastSeen,
                     )
                 }
                 dht.bootstrap(dhtNodes)
             }
-            
+
             // Start periodic discovery
             if (config.enablePeriodicDiscovery) {
                 startPeriodicDiscovery()
             }
-            
+
             // Start bootstrap retry mechanism
             if (config.enableBootstrapRetry) {
                 startBootstrapRetry()
             }
-            
+
             // Start peer cache cleanup
             startCacheCleanup()
-            
+
             // Register DHT message handler for peer discovery
             dht.registerMessageHandler { message ->
                 handleDHTMessage(message)
             }
-            
+
             emitEvent(DiscoveryEvent.DiscoveryStarted(bootstrapPeers))
-            
         } catch (e: Exception) {
             isRunning = false
             emitEvent(DiscoveryEvent.DiscoveryError("Failed to start discovery service", e))
@@ -163,22 +161,22 @@ class PeerDiscoveryService(
      */
     suspend fun stop() {
         if (!isRunning) return
-        
+
         isRunning = false
-        
+
         // Cancel all jobs
         discoveryJob?.cancel()
         bootstrapRetryJob?.cancel()
         cleanupJob?.cancel()
-        
+
         // Stop DHT
         dht.stop()
-        
+
         // Clear cache
         synchronized(peerCache) {
             peerCache.clear()
         }
-        
+
         emitEvent(DiscoveryEvent.DiscoveryStopped("Service stopped by user"))
     }
 
@@ -187,15 +185,15 @@ class PeerDiscoveryService(
      */
     suspend fun discoverPeers(): List<IPv8Manager.PeerInfo> {
         if (!isRunning) return emptyList()
-        
+
         val startTime = System.currentTimeMillis()
         val discoveredPeers = mutableListOf<IPv8Manager.PeerInfo>()
-        
+
         try {
             // Use DHT to find random peers
             val randomKey = KademliaDHT.KademliaConfig.generateRandomNodeId()
             val lookupResult = dht.findNode(randomKey)
-            
+
             // Convert DHT nodes to PeerInfo
             for (dhtNode in lookupResult.nodes) {
                 val peer = IPv8Manager.PeerInfo(
@@ -203,20 +201,19 @@ class PeerDiscoveryService(
                     address = dhtNode.address,
                     port = dhtNode.port,
                     isConnected = false,
-                    lastSeen = dhtNode.lastSeen
+                    lastSeen = dhtNode.lastSeen,
                 )
-                
+
                 addDiscoveredPeer(peer)
                 discoveredPeers.add(peer)
             }
-            
+
             // Update statistics
             updateDiscoveryStatistics(startTime, discoveredPeers.size)
-            
         } catch (e: Exception) {
             emitEvent(DiscoveryEvent.DiscoveryError("Discovery failed", e))
         }
-        
+
         return discoveredPeers
     }
 
@@ -230,21 +227,21 @@ class PeerDiscoveryService(
                 peer = peer,
                 discoveredAt = existing?.discoveredAt ?: System.currentTimeMillis(),
                 lastSeen = peer.lastSeen,
-                connectionAttempts = existing?.connectionAttempts ?: 0
+                connectionAttempts = existing?.connectionAttempts ?: 0,
             )
-            
+
             peerCache[peer.peerId] = cachedPeer
-            
+
             // Add to DHT if not already present
             val dhtNode = KademliaDHT.DHTNode(
                 nodeId = peer.peerId.toByteArray(),
                 address = peer.address,
                 port = peer.port,
-                lastSeen = peer.lastSeen
+                lastSeen = peer.lastSeen,
             )
             dht.addNode(dhtNode)
         }
-        
+
         updatePeerLists()
         emitEvent(DiscoveryEvent.PeerDiscovered(peer))
     }
@@ -257,7 +254,7 @@ class PeerDiscoveryService(
             peerCache[peerId]?.let { cached ->
                 val updatedPeer = cached.peer.copy(isConnected = true)
                 peerCache[peerId] = cached.copy(peer = updatedPeer)
-                
+
                 updatePeerLists()
                 emitEvent(DiscoveryEvent.PeerConnected(updatedPeer))
             }
@@ -272,7 +269,7 @@ class PeerDiscoveryService(
             peerCache[peerId]?.let { cached ->
                 val updatedPeer = cached.peer.copy(isConnected = false)
                 peerCache[peerId] = cached.copy(peer = updatedPeer)
-                
+
                 updatePeerLists()
                 emitEvent(DiscoveryEvent.PeerDisconnected(peerId))
             }
@@ -321,7 +318,7 @@ class PeerDiscoveryService(
                 peer = peer,
                 discoveredAt = System.currentTimeMillis(),
                 lastSeen = peer.lastSeen,
-                isBootstrap = true
+                isBootstrap = true,
             )
             peerCache[peer.peerId] = cachedPeer
         }
@@ -344,32 +341,32 @@ class PeerDiscoveryService(
     private fun startBootstrapRetry() {
         bootstrapRetryJob = scope.launch {
             var retryCount = 0
-            
+
             while (isActive && isRunning && retryCount < config.maxBootstrapRetries) {
                 delay(config.bootstrapRetryInterval)
-                
+
                 // Check if we have sufficient peers
                 val currentPeerCount = synchronized(peerCache) { peerCache.size }
-                
+
                 if (currentPeerCount < 5) { // Minimum viable peer count
                     try {
                         // Retry with bootstrap peers
                         val bootstrapPeers = synchronized(peerCache) {
                             peerCache.values.filter { it.isBootstrap }.map { it.peer }
                         }
-                        
+
                         if (bootstrapPeers.isNotEmpty()) {
                             val dhtNodes = bootstrapPeers.map { peer ->
                                 KademliaDHT.DHTNode(
                                     nodeId = peer.peerId.toByteArray(),
                                     address = peer.address,
                                     port = peer.port,
-                                    lastSeen = peer.lastSeen
+                                    lastSeen = peer.lastSeen,
                                 )
                             }
                             dht.bootstrap(dhtNodes)
                         }
-                        
+
                         retryCount++
                     } catch (e: Exception) {
                         emitEvent(DiscoveryEvent.DiscoveryError("Bootstrap retry failed", e))
@@ -387,7 +384,7 @@ class PeerDiscoveryService(
         cleanupJob = scope.launch {
             while (isActive && isRunning) {
                 delay(config.peerCacheExpiryTime / 4) // Check every quarter of expiry time
-                
+
                 try {
                     cleanupExpiredPeers()
                 } catch (e: Exception) {
@@ -400,29 +397,29 @@ class PeerDiscoveryService(
     private fun cleanupExpiredPeers() {
         val currentTime = System.currentTimeMillis()
         val expiredPeers = mutableListOf<String>()
-        
+
         synchronized(peerCache) {
             // Remove expired non-bootstrap peers
             val iterator = peerCache.iterator()
             while (iterator.hasNext()) {
                 val (peerId, cached) = iterator.next()
-                
+
                 val isExpired = (currentTime - cached.lastSeen) > config.peerCacheExpiryTime
                 val isOverCapacity = peerCache.size > config.peerCacheSize
-                
+
                 if ((isExpired || isOverCapacity) && !cached.isBootstrap && !cached.peer.isConnected) {
                     iterator.remove()
                     expiredPeers.add(peerId)
                 }
             }
         }
-        
+
         // Remove from DHT and emit events
         for (peerId in expiredPeers) {
             dht.removeNode(peerId.toByteArray())
             emitEvent(DiscoveryEvent.PeerLost(peerId))
         }
-        
+
         if (expiredPeers.isNotEmpty()) {
             updatePeerLists()
         }
@@ -435,9 +432,9 @@ class PeerDiscoveryService(
                 address = dhtNode.address,
                 port = dhtNode.port,
                 isConnected = false,
-                lastSeen = dhtNode.lastSeen
+                lastSeen = dhtNode.lastSeen,
             )
-            
+
             // Only add if not already in cache
             synchronized(peerCache) {
                 if (!peerCache.containsKey(peer.peerId)) {
@@ -451,10 +448,10 @@ class PeerDiscoveryService(
         val allPeers = synchronized(peerCache) {
             peerCache.values.map { it.peer }.sortedByDescending { it.lastSeen }
         }
-        
+
         _discoveredPeers.value = allPeers
         _connectedPeers.value = allPeers.filter { it.isConnected }
-        
+
         updateStatistics()
     }
 
@@ -464,29 +461,29 @@ class PeerDiscoveryService(
         val activePeers = cachedPeers.count { it.peer.isConnected }
         val totalAttempts = cachedPeers.sumOf { it.connectionAttempts }
         val successfulConnections = cachedPeers.count { it.peer.isConnected }
-        
+
         val successRate = if (totalAttempts > 0) {
             successfulConnections.toFloat() / totalAttempts.toFloat()
         } else {
             0f
         }
-        
+
         _discoveryStatistics.value = DiscoveryStatistics(
             totalPeersDiscovered = totalPeers,
             activePeers = activePeers,
             cachedPeers = totalPeers,
             connectionSuccessRate = successRate,
-            lastDiscoveryTime = System.currentTimeMillis()
+            lastDiscoveryTime = System.currentTimeMillis(),
         )
     }
 
     private fun updateDiscoveryStatistics(startTime: Long, peersFound: Int) {
         val discoveryTime = System.currentTimeMillis() - startTime
         val current = _discoveryStatistics.value
-        
+
         _discoveryStatistics.value = current.copy(
             averageDiscoveryTime = (current.averageDiscoveryTime + discoveryTime) / 2,
-            lastDiscoveryTime = System.currentTimeMillis()
+            lastDiscoveryTime = System.currentTimeMillis(),
         )
     }
 
@@ -497,9 +494,9 @@ class PeerDiscoveryService(
             address = "unknown", // Would be filled from network layer
             port = 0,
             isConnected = false,
-            lastSeen = System.currentTimeMillis()
+            lastSeen = System.currentTimeMillis(),
         )
-        
+
         // Add peer if it's new
         synchronized(peerCache) {
             if (!peerCache.containsKey(sourcePeer.peerId)) {

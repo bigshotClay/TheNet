@@ -5,7 +5,7 @@ import kotlin.random.Random
 
 /**
  * Kademlia Distributed Hash Table (DHT) interface for peer discovery and key-value storage.
- * 
+ *
  * Implements the Kademlia protocol for distributed peer discovery with:
  * - XOR-based distance metric for node organization
  * - K-bucket routing table for efficient peer lookup
@@ -25,7 +25,7 @@ interface KademliaDHT {
         val republishInterval: Long = 3600000, // 1 hour in milliseconds
         val expireInterval: Long = 86400000, // 24 hours in milliseconds
         val pingTimeout: Long = 5000, // 5 seconds
-        val maxRetries: Int = 3
+        val maxRetries: Int = 3,
     ) {
         companion object {
             fun generateRandomNodeId(): ByteArray = Random.nextBytes(20) // 160-bit node ID
@@ -40,7 +40,7 @@ interface KademliaDHT {
         val address: String,
         val port: Int,
         val lastSeen: Long = System.currentTimeMillis(),
-        val isAlive: Boolean = true
+        val isAlive: Boolean = true,
     ) {
         /**
          * Calculate XOR distance between this node and another node
@@ -71,7 +71,7 @@ interface KademliaDHT {
     data class LookupResult(
         val nodes: List<DHTNode>,
         val value: ByteArray? = null,
-        val found: Boolean = value != null
+        val found: Boolean = value != null,
     )
 
     /**
@@ -81,7 +81,7 @@ interface KademliaDHT {
         FIND_NODE,
         FIND_VALUE,
         STORE,
-        PING
+        PING,
     }
 
     /**
@@ -95,7 +95,7 @@ interface KademliaDHT {
         val key: ByteArray? = null,
         val value: ByteArray? = null,
         val nodes: List<DHTNode> = emptyList(),
-        val isResponse: Boolean = false
+        val isResponse: Boolean = false,
     )
 
     /**
@@ -133,7 +133,7 @@ interface KademliaDHT {
         val successfulLookups: Long = 0,
         val totalStores: Long = 0,
         val totalFinds: Long = 0,
-        val averageLatency: Long = 0
+        val averageLatency: Long = 0,
     )
 
     /**
@@ -201,4 +201,3 @@ interface KademliaDHT {
      */
     suspend fun sendMessage(node: DHTNode, message: DHTMessage): Boolean
 }
-

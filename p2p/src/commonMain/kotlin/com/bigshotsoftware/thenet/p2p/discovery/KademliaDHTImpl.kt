@@ -10,7 +10,7 @@ import kotlin.random.Random
 
 /**
  * Implementation of the Kademlia Distributed Hash Table (DHT) for peer discovery.
- * 
+ *
  * This implementation provides:
  * - Distributed peer discovery using Kademlia protocol
  * - Key-value storage across the network
@@ -18,30 +18,30 @@ import kotlin.random.Random
  * - Recursive lookups for efficient peer finding
  */
 class KademliaDHTImpl(
-    override val config: KademliaDHT.KademliaConfig
+    override val config: KademliaDHT.KademliaConfig,
 ) : KademliaDHT {
 
     override val localNode: KademliaDHT.DHTNode = KademliaDHT.DHTNode(
         nodeId = config.nodeId,
         address = "0.0.0.0", // Will be updated when networking starts
-        port = 0
+        port = 0,
     )
 
     private val routingTable = RoutingTable(localNode.nodeId, config.k)
     private val dataStore = mutableMapOf<String, Pair<ByteArray, Long>>() // key -> (value, timestamp)
     private val pendingRequests = mutableMapOf<String, CompletableDeferred<KademliaDHT.DHTMessage>>()
     private val messageHandlers = mutableListOf<(KademliaDHT.DHTMessage) -> Unit>()
-    
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutex = Mutex()
-    
+
     // State flows for observing DHT state
     private val _routingTableSize = MutableStateFlow(0)
     override val routingTableSize: StateFlow<Int> = _routingTableSize.asStateFlow()
-    
+
     private val _discoveredNodes = MutableStateFlow<List<KademliaDHT.DHTNode>>(emptyList())
     override val discoveredNodes: StateFlow<List<KademliaDHT.DHTNode>> = _discoveredNodes.asStateFlow()
-    
+
     private val _statistics = MutableStateFlow(KademliaDHT.DHTStatistics())
     override val statistics: StateFlow<KademliaDHT.DHTStatistics> = _statistics.asStateFlow()
 
@@ -51,25 +51,25 @@ class KademliaDHTImpl(
 
     override suspend fun start(config: KademliaDHT.KademliaConfig) {
         if (isRunning) return
-        
+
         isRunning = true
-        
+
         // Start periodic maintenance tasks
         startMaintenanceTasks()
-        
+
         // Update statistics
         updateStatistics()
     }
 
     override suspend fun stop() {
         if (!isRunning) return
-        
+
         isRunning = false
-        
+
         // Cancel maintenance tasks
         refreshJob?.cancel()
         republishJob?.cancel()
-        
+
         // Cancel all pending requests
         mutex.withLock {
             pendingRequests.values.forEach { deferred ->
@@ -77,22 +77,22 @@ class KademliaDHTImpl(
             }
             pendingRequests.clear()
         }
-        
+
         scope.cancel()
     }
 
     override suspend fun store(key: ByteArray, value: ByteArray): Boolean {
         val keyString = key.toHexString()
-        
+
         // Store locally
         mutex.withLock {
             dataStore[keyString] = value to System.currentTimeMillis()
         }
-        
+
         // Find closest nodes and store on them
         val closestNodes = findNode(key).nodes.take(config.k)
         var successCount = 0
-        
+
         for (node in closestNodes) {
             try {
                 val storeMessage = KademliaDHT.DHTMessage(
@@ -101,9 +101,9 @@ class KademliaDHTImpl(
                     sourceNodeId = localNode.nodeId,
                     targetNodeId = node.nodeId,
                     key = key,
-                    value = value
+                    value = value,
                 )
-                
+
                 if (sendMessage(node, storeMessage)) {
                     successCount++
                 }
@@ -111,44 +111,44 @@ class KademliaDHTImpl(
                 // Continue with other nodes if one fails
             }
         }
-        
+
         updateStatistics { copy(totalStores = totalStores + 1) }
-        
+
         return successCount > 0
     }
 
     override suspend fun findValue(key: ByteArray): KademliaDHT.LookupResult {
         val keyString = key.toHexString()
-        
+
         // Check local store first
         mutex.withLock {
             dataStore[keyString]?.let { (value, _) ->
                 return KademliaDHT.LookupResult(
                     nodes = emptyList(),
                     value = value,
-                    found = true
+                    found = true,
                 )
             }
         }
-        
+
         // Perform iterative lookup
         val result = performIterativeLookup(key, KademliaDHT.Operation.FIND_VALUE)
-        
-        updateStatistics { 
+
+        updateStatistics {
             copy(
                 totalFinds = totalFinds + 1,
-                successfulLookups = if (result.found) successfulLookups + 1 else successfulLookups
+                successfulLookups = if (result.found) successfulLookups + 1 else successfulLookups,
             )
         }
-        
+
         return result
     }
 
     override suspend fun findNode(nodeId: ByteArray): KademliaDHT.LookupResult {
         val result = performIterativeLookup(nodeId, KademliaDHT.Operation.FIND_NODE)
-        
+
         updateStatistics { copy(totalLookups = totalLookups + 1) }
-        
+
         return result
     }
 
@@ -158,15 +158,15 @@ class KademliaDHTImpl(
                 operation = KademliaDHT.Operation.PING,
                 requestId = generateRequestId(),
                 sourceNodeId = localNode.nodeId,
-                targetNodeId = node.nodeId
+                targetNodeId = node.nodeId,
             )
-            
+
             withTimeout(config.pingTimeout) {
                 val responseDeferred = CompletableDeferred<KademliaDHT.DHTMessage>()
                 mutex.withLock {
                     pendingRequests[pingMessage.requestId] = responseDeferred
                 }
-                
+
                 if (sendMessage(node, pingMessage)) {
                     val response = responseDeferred.await()
                     routingTable.updateLastSeen(node.nodeId)
@@ -184,14 +184,14 @@ class KademliaDHTImpl(
         if (node.nodeId.contentEquals(localNode.nodeId)) {
             return false
         }
-        
+
         scope.launch {
             if (routingTable.addNode(node)) {
                 updateDiscoveredNodes()
                 updateStatistics()
             }
         }
-        
+
         return true
     }
 
@@ -202,7 +202,7 @@ class KademliaDHTImpl(
                 updateStatistics()
             }
         }
-        
+
         return true
     }
 
@@ -216,7 +216,7 @@ class KademliaDHTImpl(
         for (node in bootstrapNodes) {
             addNode(node)
         }
-        
+
         // Perform lookup for our own node ID to populate routing table
         if (bootstrapNodes.isNotEmpty()) {
             findNode(localNode.nodeId)
@@ -225,7 +225,7 @@ class KademliaDHTImpl(
 
     override suspend fun refreshBuckets() {
         val bucketsToRefresh = routingTable.getBucketsNeedingRefresh(config.bucketRefreshInterval)
-        
+
         for (bucketIndex in bucketsToRefresh) {
             // Generate a random key for this bucket
             val randomKey = generateRandomKeyForBucket(bucketIndex)
@@ -285,7 +285,7 @@ class KademliaDHTImpl(
             val sourceNode = KademliaDHT.DHTNode(
                 nodeId = message.sourceNodeId,
                 address = "unknown", // Would be filled from network layer
-                port = 0
+                port = 0,
             )
             sendMessage(sourceNode, response)
         }
@@ -294,7 +294,7 @@ class KademliaDHTImpl(
         val sourceNode = KademliaDHT.DHTNode(
             nodeId = message.sourceNodeId,
             address = "unknown",
-            port = 0
+            port = 0,
         )
         addNode(sourceNode)
 
@@ -314,31 +314,31 @@ class KademliaDHTImpl(
             requestId = message.requestId,
             sourceNodeId = localNode.nodeId,
             targetNodeId = message.sourceNodeId,
-            isResponse = true
+            isResponse = true,
         )
     }
 
     private suspend fun handleFindNodeRequest(message: KademliaDHT.DHTMessage): KademliaDHT.DHTMessage {
         val targetKey = message.targetNodeId
         val closestNodes = routingTable.getClosestNodes(targetKey, config.k)
-        
+
         return KademliaDHT.DHTMessage(
             operation = KademliaDHT.Operation.FIND_NODE,
             requestId = message.requestId,
             sourceNodeId = localNode.nodeId,
             targetNodeId = message.sourceNodeId,
             nodes = closestNodes,
-            isResponse = true
+            isResponse = true,
         )
     }
 
     private suspend fun handleFindValueRequest(message: KademliaDHT.DHTMessage): KademliaDHT.DHTMessage {
         val key = message.key ?: return handleFindNodeRequest(message)
         val keyString = key.toHexString()
-        
+
         // Check if we have the value
         val storedValue = mutex.withLock { dataStore[keyString]?.first }
-        
+
         return if (storedValue != null) {
             KademliaDHT.DHTMessage(
                 operation = KademliaDHT.Operation.FIND_VALUE,
@@ -347,7 +347,7 @@ class KademliaDHTImpl(
                 targetNodeId = message.sourceNodeId,
                 key = key,
                 value = storedValue,
-                isResponse = true
+                isResponse = true,
             )
         } else {
             // Return closest nodes instead
@@ -359,7 +359,7 @@ class KademliaDHTImpl(
                 targetNodeId = message.sourceNodeId,
                 key = key,
                 nodes = closestNodes,
-                isResponse = true
+                isResponse = true,
             )
         }
     }
@@ -367,40 +367,40 @@ class KademliaDHTImpl(
     private suspend fun handleStoreRequest(message: KademliaDHT.DHTMessage): KademliaDHT.DHTMessage? {
         val key = message.key
         val value = message.value
-        
+
         if (key != null && value != null) {
             val keyString = key.toHexString()
             mutex.withLock {
                 dataStore[keyString] = value to System.currentTimeMillis()
             }
         }
-        
+
         return KademliaDHT.DHTMessage(
             operation = KademliaDHT.Operation.STORE,
             requestId = message.requestId,
             sourceNodeId = localNode.nodeId,
             targetNodeId = message.sourceNodeId,
-            isResponse = true
+            isResponse = true,
         )
     }
 
     private suspend fun performIterativeLookup(
-        targetKey: ByteArray, 
-        operation: KademliaDHT.Operation
+        targetKey: ByteArray,
+        operation: KademliaDHT.Operation,
     ): KademliaDHT.LookupResult {
         val shortlist = mutableSetOf<KademliaDHT.DHTNode>()
         val queried = mutableSetOf<ByteArray>()
         val closest = getClosestNodes(targetKey, config.alpha)
-        
+
         shortlist.addAll(closest)
-        
+
         while (true) {
             val unqueriedNodes = shortlist.filter { node ->
                 queried.none { it.contentEquals(node.nodeId) }
             }.take(config.alpha)
-            
+
             if (unqueriedNodes.isEmpty()) break
-            
+
             val responses = unqueriedNodes.map { node ->
                 scope.async {
                     queried.add(node.nodeId)
@@ -411,9 +411,9 @@ class KademliaDHTImpl(
                     }
                 }
             }.map { it.await() }
-            
+
             var foundValue: ByteArray? = null
-            
+
             for (response in responses) {
                 if (response != null) {
                     if (response.found && response.value != null) {
@@ -423,50 +423,50 @@ class KademliaDHTImpl(
                     shortlist.addAll(response.nodes)
                 }
             }
-            
+
             if (foundValue != null) {
                 return KademliaDHT.LookupResult(
                     nodes = shortlist.toList(),
                     value = foundValue,
-                    found = true
+                    found = true,
                 )
             }
         }
-        
+
         return KademliaDHT.LookupResult(
             nodes = shortlist.toList().sortedBy { node ->
                 calculateDistance(targetKey, node.nodeId)
             }.take(config.k),
-            found = false
+            found = false,
         )
     }
 
     private suspend fun queryNode(
         node: KademliaDHT.DHTNode,
         targetKey: ByteArray,
-        operation: KademliaDHT.Operation
+        operation: KademliaDHT.Operation,
     ): KademliaDHT.LookupResult? {
         val message = KademliaDHT.DHTMessage(
             operation = operation,
             requestId = generateRequestId(),
             sourceNodeId = localNode.nodeId,
             targetNodeId = targetKey,
-            key = if (operation == KademliaDHT.Operation.FIND_VALUE) targetKey else null
+            key = if (operation == KademliaDHT.Operation.FIND_VALUE) targetKey else null,
         )
-        
+
         return try {
             withTimeout(config.pingTimeout) {
                 val responseDeferred = CompletableDeferred<KademliaDHT.DHTMessage>()
                 mutex.withLock {
                     pendingRequests[message.requestId] = responseDeferred
                 }
-                
+
                 if (sendMessage(node, message)) {
                     val response = responseDeferred.await()
                     KademliaDHT.LookupResult(
                         nodes = response.nodes,
                         value = response.value,
-                        found = response.value != null
+                        found = response.value != null,
                     )
                 } else {
                     null
@@ -489,7 +489,7 @@ class KademliaDHTImpl(
                 }
             }
         }
-        
+
         // Periodic data republishing
         republishJob = scope.launch {
             while (isActive) {
@@ -510,7 +510,7 @@ class KademliaDHTImpl(
                 currentTime - timestampPair.second < config.expireInterval
             }
         }
-        
+
         for ((keyString, valuePair) in dataToRepublish) {
             val key = keyString.hexToByteArray()
             store(key, valuePair.first)
@@ -525,11 +525,11 @@ class KademliaDHTImpl(
     private suspend fun updateStatistics() {
         val totalNodes = routingTable.size()
         val activeBuckets = routingTable.activeBucketCount()
-        
+
         _routingTableSize.value = totalNodes
         _statistics.value = _statistics.value.copy(
             totalNodes = totalNodes,
-            activeBuckets = activeBuckets
+            activeBuckets = activeBuckets,
         )
     }
 

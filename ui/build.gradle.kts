@@ -12,7 +12,7 @@ plugins {
 
 kotlin {
     jvmToolchain(17)
-    
+
     androidTarget {
         compilations.all {
             kotlinOptions {

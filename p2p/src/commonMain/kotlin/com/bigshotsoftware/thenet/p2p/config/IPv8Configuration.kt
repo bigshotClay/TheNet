@@ -8,6 +8,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class IPv8Configuration(
     /**
+     * Unique identifier for this peer
+     */
+    val peerId: String = "default-peer",
+
+    /**
      * Port number for IPv8 communication
      */
     val port: Int = 8090,
@@ -63,7 +68,7 @@ data class IPv8Configuration(
  */
 @Serializable
 data class BootstrapPeer(
-    val address: String,
+    val host: String,
     val port: Int,
 )
 

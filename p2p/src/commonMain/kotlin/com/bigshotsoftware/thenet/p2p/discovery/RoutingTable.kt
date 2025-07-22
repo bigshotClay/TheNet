@@ -6,13 +6,13 @@ import kotlin.math.min
 
 /**
  * Kademlia routing table implementation using k-buckets.
- * 
+ *
  * The routing table organizes nodes into buckets based on their XOR distance from the local node.
  * Each bucket can hold up to k nodes, and nodes are organized by distance prefix.
  */
 class RoutingTable(
     private val localNodeId: ByteArray,
-    private val k: Int = 20
+    private val k: Int = 20,
 ) {
     companion object {
         private const val ID_LENGTH_BITS = 160 // 20 bytes * 8 bits
@@ -31,7 +31,7 @@ class RoutingTable(
         fun addNode(node: KademliaDHT.DHTNode): Boolean {
             // Check if node already exists
             val existingIndex = nodes.indexOfFirst { it.nodeId.contentEquals(node.nodeId) }
-            
+
             if (existingIndex != -1) {
                 // Node exists, move to end (most recently seen)
                 nodes.removeAt(existingIndex)
@@ -76,7 +76,7 @@ class RoutingTable(
 
         fun isFull(): Boolean = nodes.size >= k
 
-        fun getOldestNode(): KademliaDHT.DHTNode? = 
+        fun getOldestNode(): KademliaDHT.DHTNode? =
             nodes.minByOrNull { lastAccessed[it.nodeId] ?: 0L }
 
         fun updateLastSeen(nodeId: ByteArray) {
@@ -111,7 +111,7 @@ class RoutingTable(
      */
     suspend fun getClosestNodes(key: ByteArray, count: Int): List<KademliaDHT.DHTNode> = mutex.withLock {
         val allNodes = mutableListOf<Pair<KademliaDHT.DHTNode, ULong>>()
-        
+
         // Collect all nodes with their distances
         for (bucket in buckets) {
             for (node in bucket.getNodes()) {
@@ -177,7 +177,7 @@ class RoutingTable(
     suspend fun getBucketsNeedingRefresh(maxAge: Long): List<Int> = mutex.withLock {
         val currentTime = System.currentTimeMillis()
         val bucketsToRefresh = mutableListOf<Int>()
-        
+
         for (i in buckets.indices) {
             val bucket = buckets[i]
             if (bucket.size() > 0) {
@@ -187,7 +187,7 @@ class RoutingTable(
                 }
             }
         }
-        
+
         return@withLock bucketsToRefresh
     }
 
@@ -196,16 +196,16 @@ class RoutingTable(
      */
     private fun getBucketIndex(nodeId: ByteArray): Int {
         val distance = calculateDistance(localNodeId, nodeId)
-        
+
         // Find the position of the most significant bit
         if (distance == 0UL) {
             return ID_LENGTH_BITS - 1
         }
-        
+
         // Count leading zeros to find the bit position
         val leadingZeros = distance.countLeadingZeroBits()
         val bitPosition = 64 - leadingZeros - 1 // 64-bit ULong
-        
+
         return min(bitPosition, ID_LENGTH_BITS - 1)
     }
 
@@ -214,12 +214,12 @@ class RoutingTable(
      */
     private fun calculateDistance(id1: ByteArray, id2: ByteArray): ULong {
         require(id1.size == id2.size) { "Node IDs must be same length" }
-        
+
         val distance = ByteArray(id1.size)
         for (i in id1.indices) {
             distance[i] = (id1[i].toInt() xor id2[i].toInt()).toByte()
         }
-        
+
         return distance.fold(0UL) { acc, byte -> (acc shl 8) or byte.toUByte().toULong() }
     }
 }

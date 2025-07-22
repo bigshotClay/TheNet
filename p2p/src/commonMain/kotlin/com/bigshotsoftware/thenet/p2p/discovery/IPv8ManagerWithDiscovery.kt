@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.*
 
 /**
  * Enhanced IPv8Manager that integrates Kademlia DHT-based peer discovery.
- * 
+ *
  * This implementation extends the base IPv8Manager with:
  * - Kademlia DHT for distributed peer discovery
  * - Enhanced peer routing and caching
@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.*
  */
 class IPv8ManagerWithDiscovery(
     private val baseManager: BaseIPv8Manager,
-    private val discoveryConfig: PeerDiscoveryService.DiscoveryConfig = PeerDiscoveryService.DiscoveryConfig()
+    private val discoveryConfig: PeerDiscoveryService.DiscoveryConfig = PeerDiscoveryService.DiscoveryConfig(),
 ) : IPv8Manager {
 
     // DHT and discovery service
@@ -28,27 +28,27 @@ class IPv8ManagerWithDiscovery(
             republishInterval = 3600000, // 1 hour
             expireInterval = 86400000, // 24 hours
             pingTimeout = 5000, // 5 seconds
-            maxRetries = 3
-        )
+            maxRetries = 3,
+        ),
     )
-    
+
     private val discoveryService = PeerDiscoveryService(dht, discoveryConfig)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // Combined peer list from base manager and discovery service
-    override val discoveredPeers: StateFlow<List<IPv8Manager.PeerInfo>> = 
+    override val discoveredPeers: StateFlow<List<IPv8Manager.PeerInfo>> =
         combine(
             baseManager.discoveredPeers,
-            discoveryService.discoveredPeers
+            discoveryService.discoveredPeers,
         ) { basePeers, discoveryPeers ->
             // Merge and deduplicate peers
             val allPeers = mutableMapOf<String, IPv8Manager.PeerInfo>()
-            
+
             // Add base peers first
             basePeers.forEach { peer ->
                 allPeers[peer.peerId] = peer
             }
-            
+
             // Add discovery peers, updating existing entries with more recent info
             discoveryPeers.forEach { peer ->
                 val existing = allPeers[peer.peerId]
@@ -56,7 +56,7 @@ class IPv8ManagerWithDiscovery(
                     allPeers[peer.peerId] = peer
                 }
             }
-            
+
             allPeers.values.toList().sortedByDescending { it.lastSeen }
         }.stateIn(scope, SharingStarted.Lazily, emptyList())
 
@@ -72,17 +72,17 @@ class IPv8ManagerWithDiscovery(
         val dhtConfig: KademliaDHT.KademliaConfig = KademliaDHT.KademliaConfig(),
         val discoveryConfig: PeerDiscoveryService.DiscoveryConfig = PeerDiscoveryService.DiscoveryConfig(),
         val enableDHTDiscovery: Boolean = true,
-        val bootstrapDHTNodes: List<IPv8Manager.PeerInfo> = emptyList()
+        val bootstrapDHTNodes: List<IPv8Manager.PeerInfo> = emptyList(),
     )
 
     override suspend fun start(config: IPv8Manager.IPv8Config) {
         // Start base IPv8 manager
         baseManager.start(config)
-        
+
         // If config is enhanced, start discovery service
         if (config is EnhancedIPv8Config && config.enableDHTDiscovery) {
             discoveryService.start(config.bootstrapDHTNodes)
-            
+
             // Set up discovery event handling
             setupDiscoveryEventHandling()
         }
@@ -91,7 +91,7 @@ class IPv8ManagerWithDiscovery(
     override suspend fun stop() {
         // Stop discovery service first
         discoveryService.stop()
-        
+
         // Stop base manager
         baseManager.stop()
     }
@@ -186,30 +186,30 @@ class IPv8ManagerWithDiscovery(
                 // This would trigger actual network connection
                 // For now, we'll just mark it as available
             }
-            
+
             is PeerDiscoveryService.DiscoveryEvent.PeerConnected -> {
                 // Update base manager about successful connection
                 // This would sync the connection state
             }
-            
+
             is PeerDiscoveryService.DiscoveryEvent.PeerDisconnected -> {
                 // Update base manager about disconnection
                 // This would trigger reconnection attempts if needed
             }
-            
+
             is PeerDiscoveryService.DiscoveryEvent.PeerLost -> {
                 // Remove peer from base manager if it's completely lost
             }
-            
+
             is PeerDiscoveryService.DiscoveryEvent.DiscoveryError -> {
                 // Log discovery errors and potentially trigger fallback mechanisms
                 // Could also emit error events to application layer
             }
-            
+
             is PeerDiscoveryService.DiscoveryEvent.DiscoveryStarted -> {
                 // Discovery service started successfully
             }
-            
+
             is PeerDiscoveryService.DiscoveryEvent.DiscoveryStopped -> {
                 // Discovery service stopped
             }
@@ -222,7 +222,7 @@ class IPv8ManagerWithDiscovery(
  */
 fun createIPv8ManagerWithDiscovery(
     baseManager: BaseIPv8Manager,
-    discoveryConfig: PeerDiscoveryService.DiscoveryConfig = PeerDiscoveryService.DiscoveryConfig()
+    discoveryConfig: PeerDiscoveryService.DiscoveryConfig = PeerDiscoveryService.DiscoveryConfig(),
 ): IPv8ManagerWithDiscovery {
     return IPv8ManagerWithDiscovery(baseManager, discoveryConfig)
 }
@@ -233,13 +233,13 @@ fun createIPv8ManagerWithDiscovery(
 fun IPv8Manager.IPv8Config.withDiscovery(
     dhtConfig: KademliaDHT.KademliaConfig = KademliaDHT.KademliaConfig(),
     discoveryConfig: PeerDiscoveryService.DiscoveryConfig = PeerDiscoveryService.DiscoveryConfig(),
-    bootstrapDHTNodes: List<IPv8Manager.PeerInfo> = emptyList()
+    bootstrapDHTNodes: List<IPv8Manager.PeerInfo> = emptyList(),
 ): IPv8ManagerWithDiscovery.EnhancedIPv8Config {
     return IPv8ManagerWithDiscovery.EnhancedIPv8Config(
         baseConfig = this,
         dhtConfig = dhtConfig,
         discoveryConfig = discoveryConfig,
         enableDHTDiscovery = true,
-        bootstrapDHTNodes = bootstrapDHTNodes
+        bootstrapDHTNodes = bootstrapDHTNodes,
     )
 }

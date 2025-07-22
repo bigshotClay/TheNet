@@ -1,8 +1,6 @@
 package com.bigshotsoftware.thenet.p2p
 
 import com.bigshotsoftware.thenet.p2p.config.IPv8Configuration
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

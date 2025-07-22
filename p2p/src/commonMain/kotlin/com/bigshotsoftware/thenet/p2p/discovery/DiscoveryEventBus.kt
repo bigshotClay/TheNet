@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 
 /**
  * Event bus system for peer discovery events with comprehensive callback management.
- * 
+ *
  * Provides:
  * - Type-safe event handling
  * - Asynchronous event processing
@@ -26,87 +26,87 @@ class DiscoveryEventBus {
     sealed class DetailedDiscoveryEvent {
         abstract val timestamp: Long
         abstract val eventId: String
-        
+
         data class PeerDiscovered(
             val peer: IPv8Manager.PeerInfo,
             val source: DiscoverySource,
             val discoveryMethod: DiscoveryMethod,
             override val timestamp: Long = System.currentTimeMillis(),
-            override val eventId: String = generateEventId()
+            override val eventId: String = generateEventId(),
         ) : DetailedDiscoveryEvent()
-        
+
         data class PeerLost(
             val peerId: String,
             val reason: LossReason,
             val lastSeen: Long,
             override val timestamp: Long = System.currentTimeMillis(),
-            override val eventId: String = generateEventId()
+            override val eventId: String = generateEventId(),
         ) : DetailedDiscoveryEvent()
-        
+
         data class PeerConnected(
             val peer: IPv8Manager.PeerInfo,
             val connectionTime: Long,
             val connectionMethod: ConnectionMethod,
             override val timestamp: Long = System.currentTimeMillis(),
-            override val eventId: String = generateEventId()
+            override val eventId: String = generateEventId(),
         ) : DetailedDiscoveryEvent()
-        
+
         data class PeerDisconnected(
             val peerId: String,
             val reason: DisconnectionReason,
             val connectionDuration: Long,
             override val timestamp: Long = System.currentTimeMillis(),
-            override val eventId: String = generateEventId()
+            override val eventId: String = generateEventId(),
         ) : DetailedDiscoveryEvent()
-        
+
         data class PeerStatusChanged(
             val peerId: String,
             val oldStatus: PeerStatus,
             val newStatus: PeerStatus,
             val statusChangeReason: String,
             override val timestamp: Long = System.currentTimeMillis(),
-            override val eventId: String = generateEventId()
+            override val eventId: String = generateEventId(),
         ) : DetailedDiscoveryEvent()
-        
+
         data class DiscoveryStarted(
             val bootstrapNodes: List<IPv8Manager.PeerInfo>,
             val config: PeerDiscoveryService.DiscoveryConfig,
             override val timestamp: Long = System.currentTimeMillis(),
-            override val eventId: String = generateEventId()
+            override val eventId: String = generateEventId(),
         ) : DetailedDiscoveryEvent()
-        
+
         data class DiscoveryStopped(
             val reason: String,
             val totalRuntime: Long,
             val peersDiscovered: Int,
             override val timestamp: Long = System.currentTimeMillis(),
-            override val eventId: String = generateEventId()
+            override val eventId: String = generateEventId(),
         ) : DetailedDiscoveryEvent()
-        
+
         data class DiscoveryError(
             val error: String,
             val cause: Throwable?,
             val severity: ErrorSeverity,
             val recoverable: Boolean,
             override val timestamp: Long = System.currentTimeMillis(),
-            override val eventId: String = generateEventId()
+            override val eventId: String = generateEventId(),
         ) : DetailedDiscoveryEvent()
-        
+
         data class NetworkPartition(
             val partitionedPeers: List<String>,
             val retainedPeers: List<String>,
             val partitionDuration: Long,
             override val timestamp: Long = System.currentTimeMillis(),
-            override val eventId: String = generateEventId()
+            override val eventId: String = generateEventId(),
         ) : DetailedDiscoveryEvent()
-        
+
         data class NetworkMerge(
             val mergedPeers: List<String>,
             val conflictResolutions: Map<String, String>,
             override val timestamp: Long = System.currentTimeMillis(),
-            override val eventId: String = generateEventId()
+            override val eventId: String = generateEventId(),
         ) : DetailedDiscoveryEvent()
-        
+
         data class DHTOperation(
             val operation: KademliaDHT.Operation,
             val key: ByteArray?,
@@ -114,7 +114,7 @@ class DiscoveryEventBus {
             val latency: Long,
             val nodeCount: Int,
             override val timestamp: Long = System.currentTimeMillis(),
-            override val eventId: String = generateEventId()
+            override val eventId: String = generateEventId(),
         ) : DetailedDiscoveryEvent()
     }
 
@@ -127,7 +127,7 @@ class DiscoveryEventBus {
         IPv8_DISCOVERY,
         MANUAL_ADD,
         PEER_REFERRAL,
-        CACHE_RESTORE
+        CACHE_RESTORE,
     }
 
     /**
@@ -139,7 +139,7 @@ class DiscoveryEventBus {
         PERIODIC_LOOKUP,
         BOOTSTRAP,
         GOSSIP,
-        DIRECT_CONNECTION
+        DIRECT_CONNECTION,
     }
 
     /**
@@ -149,7 +149,7 @@ class DiscoveryEventBus {
         DIRECT_TCP,
         NAT_PUNCHING,
         RELAY,
-        IPv8_OVERLAY
+        IPv8_OVERLAY,
     }
 
     /**
@@ -161,7 +161,7 @@ class DiscoveryEventBus {
         NETWORK_ERROR,
         PROTOCOL_ERROR,
         CACHE_EXPIRY,
-        MANUAL_REMOVAL
+        MANUAL_REMOVAL,
     }
 
     /**
@@ -173,7 +173,7 @@ class DiscoveryEventBus {
         PROTOCOL_VIOLATION,
         RESOURCE_EXHAUSTION,
         SECURITY_VIOLATION,
-        USER_INITIATED
+        USER_INITIATED,
     }
 
     /**
@@ -186,7 +186,7 @@ class DiscoveryEventBus {
         DISCONNECTED,
         FAILED,
         BANNED,
-        CACHED
+        CACHED,
     }
 
     /**
@@ -196,7 +196,7 @@ class DiscoveryEventBus {
         LOW,
         MEDIUM,
         HIGH,
-        CRITICAL
+        CRITICAL,
     }
 
     /**
@@ -207,26 +207,26 @@ class DiscoveryEventBus {
         val callback: suspend (DetailedDiscoveryEvent) -> Unit,
         val priority: Int = 0, // Higher priority = executed first
         val eventFilter: (DetailedDiscoveryEvent) -> Boolean = { true },
-        val async: Boolean = true
+        val async: Boolean = true,
     )
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    
+
     // Event flows
     private val _events = MutableSharedFlow<DetailedDiscoveryEvent>(
         replay = 100, // Keep last 100 events for late subscribers
-        extraBufferCapacity = Channel.UNLIMITED
+        extraBufferCapacity = Channel.UNLIMITED,
     )
     val events: SharedFlow<DetailedDiscoveryEvent> = _events.asSharedFlow()
-    
+
     // Event history for replay
     private val eventHistory = mutableListOf<DetailedDiscoveryEvent>()
     private val maxHistorySize = 1000
-    
+
     // Callback management
     private val callbacks = mutableMapOf<String, EventCallback>()
     private val eventChannel = Channel<DetailedDiscoveryEvent>(Channel.UNLIMITED)
-    
+
     // Statistics
     private var totalEventsEmitted = 0L
     private var totalCallbacksExecuted = 0L
@@ -252,13 +252,13 @@ class DiscoveryEventBus {
                 eventHistory.removeAt(0)
             }
         }
-        
+
         // Emit to shared flow
         _events.emit(event)
-        
+
         // Send to callback processing
         eventChannel.send(event)
-        
+
         totalEventsEmitted++
     }
 
@@ -269,15 +269,15 @@ class DiscoveryEventBus {
         callback: suspend (DetailedDiscoveryEvent) -> Unit,
         priority: Int = 0,
         eventFilter: (DetailedDiscoveryEvent) -> Boolean = { true },
-        async: Boolean = true
+        async: Boolean = true,
     ): String {
         val eventCallback = EventCallback(
             callback = callback,
             priority = priority,
             eventFilter = eventFilter,
-            async = async
+            async = async,
         )
-        
+
         callbacks[eventCallback.id] = eventCallback
         return eventCallback.id
     }
@@ -295,7 +295,7 @@ class DiscoveryEventBus {
     inline fun <reified T : DetailedDiscoveryEvent> registerTypedCallback(
         noinline callback: suspend (T) -> Unit,
         priority: Int = 0,
-        async: Boolean = true
+        async: Boolean = true,
     ): String {
         return registerCallback(
             callback = { event ->
@@ -305,7 +305,7 @@ class DiscoveryEventBus {
             },
             priority = priority,
             eventFilter = { it is T },
-            async = async
+            async = async,
         )
     }
 
@@ -315,28 +315,28 @@ class DiscoveryEventBus {
     fun getEventHistory(
         eventTypes: Set<kotlin.reflect.KClass<out DetailedDiscoveryEvent>>? = null,
         since: Long? = null,
-        limit: Int? = null
+        limit: Int? = null,
     ): List<DetailedDiscoveryEvent> {
         return synchronized(eventHistory) {
             var filtered = eventHistory.asSequence()
-            
+
             // Filter by event types
             if (eventTypes != null) {
                 filtered = filtered.filter { event ->
                     eventTypes.any { type -> type.isInstance(event) }
                 }
             }
-            
+
             // Filter by timestamp
             if (since != null) {
                 filtered = filtered.filter { it.timestamp >= since }
             }
-            
+
             // Apply limit
             if (limit != null) {
                 filtered = filtered.take(limit)
             }
-            
+
             filtered.toList()
         }
     }
@@ -347,11 +347,11 @@ class DiscoveryEventBus {
     suspend fun replayEvents(
         callbackId: String,
         eventTypes: Set<kotlin.reflect.KClass<out DetailedDiscoveryEvent>>? = null,
-        since: Long? = null
+        since: Long? = null,
     ) {
         val eventCallback = callbacks[callbackId] ?: return
         val eventsToReplay = getEventHistory(eventTypes, since)
-        
+
         for (event in eventsToReplay) {
             if (eventCallback.eventFilter(event)) {
                 try {
@@ -373,7 +373,7 @@ class DiscoveryEventBus {
             averageCallbackLatency = averageCallbackLatency,
             activeCallbacks = callbacks.size,
             eventHistorySize = eventHistory.size,
-            pendingEvents = eventChannel.tryReceive().isSuccess
+            pendingEvents = eventChannel.tryReceive().isSuccess,
         )
     }
 
@@ -398,11 +398,11 @@ class DiscoveryEventBus {
 
     private suspend fun processEvent(event: DetailedDiscoveryEvent) {
         val sortedCallbacks = callbacks.values.sortedByDescending { it.priority }
-        
+
         for (eventCallback in sortedCallbacks) {
             if (eventCallback.eventFilter(event)) {
                 val startTime = System.currentTimeMillis()
-                
+
                 try {
                     if (eventCallback.async) {
                         scope.launch {
@@ -411,20 +411,21 @@ class DiscoveryEventBus {
                     } else {
                         eventCallback.callback(event)
                     }
-                    
+
                     totalCallbacksExecuted++
-                    
+
                     val latency = System.currentTimeMillis() - startTime
                     averageCallbackLatency = (averageCallbackLatency + latency) / 2
-                    
                 } catch (e: Exception) {
                     // Log callback execution error but continue with other callbacks
-                    emit(DetailedDiscoveryEvent.DiscoveryError(
-                        error = "Callback execution failed: ${e.message}",
-                        cause = e,
-                        severity = ErrorSeverity.LOW,
-                        recoverable = true
-                    ))
+                    emit(
+                        DetailedDiscoveryEvent.DiscoveryError(
+                            error = "Callback execution failed: ${e.message}",
+                            cause = e,
+                            severity = ErrorSeverity.LOW,
+                            recoverable = true,
+                        ),
+                    )
                 }
             }
         }
@@ -433,11 +434,11 @@ class DiscoveryEventBus {
     companion object {
         private var eventIdCounter = 0L
         private var callbackIdCounter = 0L
-        
+
         private fun generateEventId(): String {
             return "event_${System.currentTimeMillis()}_${eventIdCounter++}"
         }
-        
+
         private fun generateCallbackId(): String {
             return "callback_${System.currentTimeMillis()}_${callbackIdCounter++}"
         }
@@ -452,7 +453,7 @@ class DiscoveryEventBus {
         val averageCallbackLatency: Long,
         val activeCallbacks: Int,
         val eventHistorySize: Int,
-        val pendingEvents: Boolean
+        val pendingEvents: Boolean,
     )
 }
 
@@ -466,7 +467,7 @@ class DiscoveryEventBus {
 suspend fun DiscoveryEventBus.emitPeerDiscovered(
     peer: IPv8Manager.PeerInfo,
     source: DiscoveryEventBus.DiscoverySource,
-    method: DiscoveryEventBus.DiscoveryMethod
+    method: DiscoveryEventBus.DiscoveryMethod,
 ) {
     emit(DiscoveryEventBus.DetailedDiscoveryEvent.PeerDiscovered(peer, source, method))
 }
@@ -476,13 +477,15 @@ suspend fun DiscoveryEventBus.emitPeerDiscovered(
  */
 suspend fun DiscoveryEventBus.emitPeerConnected(
     peer: IPv8Manager.PeerInfo,
-    connectionMethod: DiscoveryEventBus.ConnectionMethod
+    connectionMethod: DiscoveryEventBus.ConnectionMethod,
 ) {
-    emit(DiscoveryEventBus.DetailedDiscoveryEvent.PeerConnected(
-        peer = peer,
-        connectionTime = System.currentTimeMillis(),
-        connectionMethod = connectionMethod
-    ))
+    emit(
+        DiscoveryEventBus.DetailedDiscoveryEvent.PeerConnected(
+            peer = peer,
+            connectionTime = System.currentTimeMillis(),
+            connectionMethod = connectionMethod,
+        ),
+    )
 }
 
 /**
@@ -493,13 +496,15 @@ suspend fun DiscoveryEventBus.emitDHTOperation(
     key: ByteArray?,
     success: Boolean,
     latency: Long,
-    nodeCount: Int
+    nodeCount: Int,
 ) {
-    emit(DiscoveryEventBus.DetailedDiscoveryEvent.DHTOperation(
-        operation = operation,
-        key = key,
-        success = success,
-        latency = latency,
-        nodeCount = nodeCount
-    ))
+    emit(
+        DiscoveryEventBus.DetailedDiscoveryEvent.DHTOperation(
+            operation = operation,
+            key = key,
+            success = success,
+            latency = latency,
+            nodeCount = nodeCount,
+        ),
+    )
 }

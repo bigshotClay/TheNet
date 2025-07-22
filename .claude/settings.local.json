@@ -36,7 +36,9 @@
       "Bash(winget install:*)",
       "Bash(powershell:*)",
       "WebFetch(domain:github.com)",
-      "Bash(git submodule add:*)"
+      "Bash(git submodule add:*)",
+      "Bash(.gradlew --stop)",
+      "Bash(.gradlew.bat clean:*)"
     ],
     "deny": []
   }

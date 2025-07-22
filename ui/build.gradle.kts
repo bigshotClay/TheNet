@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.kotlin.compose.compiler)
     alias(libs.plugins.android.library)
     alias(libs.plugins.compose)
     alias(libs.plugins.dokka)
@@ -10,6 +11,8 @@ plugins {
 @file:OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
 
 kotlin {
+    jvmToolchain(17)
+    
     androidTarget {
         compilations.all {
             kotlinOptions {
@@ -20,7 +23,6 @@ kotlin {
     }
 
     jvm("desktop") {
-        jvmToolchain(17)
         // withJava() removed due to Android plugin compatibility
     }
 

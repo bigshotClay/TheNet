@@ -6,6 +6,8 @@ plugins {
 }
 
 kotlin {
+    jvmToolchain(17)
+
     // Configure targets
     androidTarget {
         compilations.all {
@@ -17,7 +19,6 @@ kotlin {
     }
 
     jvm("desktop") {
-        jvmToolchain(17)
         // withJava() removed due to Android plugin compatibility
     }
 

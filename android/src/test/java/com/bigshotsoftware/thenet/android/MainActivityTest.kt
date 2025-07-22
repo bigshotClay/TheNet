@@ -1,17 +1,15 @@
 package com.bigshotsoftware.thenet.android
 
-import io.mockk.android.AndroidMockKConfig
+import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
-import org.junit.Before
 import org.junit.Test
 
-class MainActivityTest {
+interface TestService {
+    fun getValue(): String
+}
 
-    @Before
-    fun setUp() {
-        AndroidMockKConfig.throwOnStaticMockIfUnknown = false
-    }
+class MainActivityTest {
 
     @Test
     fun `framework integration should work`() {
@@ -22,12 +20,8 @@ class MainActivityTest {
 
     @Test
     fun `MockK should work in Android app tests`() {
-        interface TestService {
-            fun getValue(): String
-        }
-
         val mockService = mockk<TestService>()
-        io.mockk.every { mockService.getValue() } returns "android_mocked"
+        every { mockService.getValue() } returns "android_mocked"
 
         assertEquals("android_mocked", mockService.getValue())
     }

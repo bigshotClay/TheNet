@@ -9,8 +9,8 @@ buildscript {
         maven("https://jitpack.io")
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:8.8.0-alpha05")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.10")
+        classpath("com.android.tools.build:gradle:8.1.4")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0")
         classpath("app.cash.sqldelight:gradle-plugin:2.0.1")
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:1.9.10")
         classpath("androidx.navigation:navigation-safe-args-gradle-plugin:2.8.6")
@@ -22,6 +22,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.kotlin.compose.compiler) apply false
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.compose) apply false

@@ -1,18 +1,12 @@
 package com.bigshotsoftware.thenet
 
-import io.mockk.android.AndroidMockKConfig
 import io.mockk.every
 import io.mockk.mockk
-import org.junit.Assert.*
-import org.junit.Before
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AndroidPlatformTest {
-
-    @Before
-    fun setUp() {
-        AndroidMockKConfig.throwOnStaticMockIfUnknown = false
-    }
 
     @Test
     fun `should return Android platform name`() {

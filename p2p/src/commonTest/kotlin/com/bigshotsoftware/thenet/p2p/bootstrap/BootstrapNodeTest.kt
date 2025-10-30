@@ -39,13 +39,15 @@ class BootstrapNodeTest {
 
     @Test
     fun testSuccessRateCalculation() {
-        val node1 = createTestNode(
+        val node1 = BootstrapNode(
+            peer = BootstrapPeer("test.example.com", 8090),
             successfulConnections = 80,
             failedConnections = 20,
         )
         assertEquals(0.8, node1.successRate, 0.01)
 
-        val node2 = createTestNode(
+        val node2 = BootstrapNode(
+            peer = BootstrapPeer("test.example.com", 8090),
             successfulConnections = 0,
             failedConnections = 0,
         )
@@ -75,7 +77,8 @@ class BootstrapNodeTest {
 
     @Test
     fun testHealthUpdate() {
-        val node = createTestNode(
+        val node = BootstrapNode(
+            peer = BootstrapPeer("test.example.com", 8090),
             successfulConnections = 100,
             failedConnections = 10,
             averageResponseTime = 100,
@@ -113,7 +116,8 @@ class BootstrapNodeTest {
 
     @Test
     fun testAverageResponseTimeCalculation() {
-        var node = createTestNode(
+        var node = BootstrapNode(
+            peer = BootstrapPeer("test.example.com", 8090),
             successfulConnections = 2,
             averageResponseTime = 100,
         )

@@ -1,5 +1,6 @@
 package com.bigshotsoftware.thenet.p2p.config
 
+import com.bigshotsoftware.thenet.p2p.nat.*
 import kotlinx.serialization.Serializable
 
 /**
@@ -51,6 +52,11 @@ data class IPv8Configuration(
      * Enable NAT puncturing for better connectivity
      */
     val enableNatPuncturing: Boolean = true,
+
+    /**
+     * NAT traversal configuration
+     */
+    val natTraversal: NATTraversalConfiguration = NATTraversalConfiguration(),
 
     /**
      * Directory for storing IPv8 data (keys, database, etc.)
@@ -128,4 +134,70 @@ data class TrustChainConfiguration(
      * Database file path for TrustChain storage
      */
     val databasePath: String? = null,
+)
+
+/**
+ * NAT traversal configuration for enhanced peer connectivity
+ */
+@Serializable
+data class NATTraversalConfiguration(
+    /**
+     * NAT traversal mode
+     */
+    val mode: NATTraversalMode = NATTraversalMode.AUTO,
+    
+    /**
+     * STUN servers for NAT discovery
+     */
+    val stunServers: List<STUNServer> = defaultSTUNServers,
+    
+    /**
+     * TURN servers for relay fallback
+     */
+    val turnServers: List<TURNServer> = defaultTURNServers,
+    
+    /**
+     * Enable port prediction for symmetric NAT traversal
+     */
+    val enablePortPrediction: Boolean = true,
+    
+    /**
+     * Maximum number of puncturing attempts before falling back to relay
+     */
+    val maxPuncturingAttempts: Int = 5,
+    
+    /**
+     * Enable TURN relay fallback when hole punching fails
+     */
+    val enableRelayFallback: Boolean = true,
+    
+    /**
+     * Timeout for individual STUN requests in milliseconds
+     */
+    val stunTimeoutMs: Long = 5000,
+    
+    /**
+     * Timeout for TURN allocation requests in milliseconds
+     */
+    val turnTimeoutMs: Long = 10000,
+    
+    /**
+     * Enable NAT type detection and caching
+     */
+    val enableNATDetection: Boolean = true,
+    
+    /**
+     * Interval for NAT type re-detection in milliseconds (0 = disabled)
+     */
+    val natDetectionInterval: Long = 300000, // 5 minutes
+    
+    /**
+     * Enable connectivity checks before establishing connections
+     */
+    val enableConnectivityChecks: Boolean = true,
+    
+    /**
+     * Maximum bandwidth allocation for TURN relays in bytes/second (0 = unlimited)
+     */
+    val maxRelayBandwidth: Long = 0
 )

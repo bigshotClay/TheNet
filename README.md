@@ -25,7 +25,7 @@ TheNet is a censorship-resistant, user-centric social platform where users own t
 
 | Phase | Status | Duration |
 |-------|--------|----------|
-| Phase 1: Core P2P Infrastructure | 🚧 Planning | Months 1-3 |
+| Phase 1: Core P2P Infrastructure | 🚧 In Progress | Months 1-3 |
 | Phase 2: Identity & Blockchain | ⏳ Upcoming | Months 4-6 |
 | Phase 3: Content & Distribution | ⏳ Upcoming | Months 7-9 |
 | Phase 4: UI & Polish | ⏳ Upcoming | Months 10-12 |
@@ -37,6 +37,10 @@ TheNet is a censorship-resistant, user-centric social platform where users own t
 - [ ] Epic 1.2: IPv8 P2P Networking Integration  
 - [ ] Epic 1.3: Corda Blockchain Foundation
 - [ ] Epic 1.4: Anti-Bot Infrastructure
+
+Recent progress:
+- ✅ TN-201: Integrated IPv8 Kotlin library
+- ✅ TN-202: Implemented peer discovery (Kademlia DHT) and desktop demo UI for discovery
 
 ## 🛠️ Development Setup
 
@@ -60,6 +64,9 @@ cd TheNet
 
 # Run Android app
 ./gradlew :android:installDebug
+
+# Run Desktop app (starts networking and discovery service)
+./gradlew :desktop:run
 ```
 
 ## 📚 Documentation

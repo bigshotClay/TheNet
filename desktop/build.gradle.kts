@@ -23,6 +23,7 @@ kotlin {
             dependencies {
                 // Project modules
                 implementation(projects.shared)
+                implementation(projects.p2p)
 
                 // Compose Desktop
                 implementation(compose.desktop.currentOs)

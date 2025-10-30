@@ -38,7 +38,9 @@
       "WebFetch(domain:github.com)",
       "Bash(git submodule add:*)",
       "Bash(.gradlew --stop)",
-      "Bash(.gradlew.bat clean:*)"
+      "Bash(.gradlew.bat clean:*)",
+      "Bash(../gradlew test)",
+      "Bash(../gradlew:*)"
     ],
     "deny": []
   }
